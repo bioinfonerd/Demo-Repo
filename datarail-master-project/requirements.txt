@@ -1,0 +1,7 @@
+matplotlib
+numpy
+scipy
+pandas==0.22
+seaborn>=0.9.0
+scikit_learn
+lxml

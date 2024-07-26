@@ -1,0 +1,6 @@
+agent,max_dose__um,num_doses,role,num_replicates
+agent_1,10,9,treatment,3
+agent_2,10,7,treatment,3
+agent_3,1,9,treatment,3
+agent_4,10,9,treatment,3
+agent_5,10,1,positive_control,2
