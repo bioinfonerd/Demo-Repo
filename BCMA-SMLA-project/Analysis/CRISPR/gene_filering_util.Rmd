@@ -1,0 +1,74 @@
+---
+title: "filter_genes_CRISPR_results"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+library(dplyr)
+```
+
+```{r read_xlsx}
+setwd("/Users/hbi18538/Box Sync/H3 Data Science/1-Data Science Team/Projects/BCMA-SMLA")
+h3b7503_IgG<-list(
+  read.xlsx("Analysis/CRISPR_H3B7503_vs_IgG_neg_top200.xlsx", 1),
+  read.xlsx("Analysis/CRISPR_H3B7503_vs_IgG_pos_top200.xlsx", 1))
+names(h3b7503_IgG)<-c("neg", "pos")
+belamef_IgG<-list(
+  neg<-read.xlsx("Analysis/CRISPR_Belamef_vs_IgG_neg_top200.xlsx", 1),
+  pos<-read.xlsx("Analysis/CRISPR_Belamef_vs_IgG_pos_top200.xlsx", 1))
+names(belamef_IgG)<-c("neg", "pos")
+
+```
+
+```{r define_pathway_genes}
+h3b7503_IgG_pos_cp_gl<-list(
+  group1=c("NFKBIA", "NFKBIB", "PTEN", "TNFR1", "TNFR2", "GSK3B", "TNFRSF17", "BIRC3", "CIAP"),
+  group2=c("EIF3B", "EIF3C", "EIF3F", "EIF3H", "EIF3M", "EIF4A1","EIF4A2", "RPS2", "GSK3B"),
+  group3=c("CASL4", "BECN1", "G3BP1", "H2AC21", "H2AZ", "SQSTM1", "ACSl4", "LIPT2", "SRD5A3"),
+  group4=c("GPI", "MPI"),
+  group5=c("ALG3", "DPM1"),
+  group6=c("ODC1")
+)
+h3b7503_IgG_pos_cp_gl_tbl<-
+  data.frame(cbind(c(rep("group1", 8), rep("group2", 9), rep("group3", 9),
+          rep("group4", 2), rep("group5", 2), "group6"),
+        unlist(h3b7503_IgG_pos_cp_gl)))
+colnames(h3b7503_IgG_pos_cp_gl_tbl)=c("group", "gene")
+
+
+h3b7503_IgG_neg_cp_gl<-list(
+  group1=c("APH1A", "PSEN1", "PSEN2", "PSENEN", "NCSTN", "CAPN10", "CHP1", "BIRC5"),
+  group2=c("PPP1CB", "PPP1R12A", "LIMK2", "WASF1", "GRIA3A", "GRIA4"),
+  group3=c("DNMT3A", "RBBP7"),
+  group4=c("GCLM")
+)
+h3b7503_IgG_neg_cp_gl_tbl<-
+  data.frame(cbind(c(rep("group1", 8), rep("group2", 6), rep("group3", 2),
+          rep("group4", 1)),
+        unlist(h3b7503_IgG_neg_cp_gl)))
+colnames(h3b7503_IgG_neg_cp_gl_tbl)=c("group", "gene")
+
+```
+
+```{r filter}
+h3b7503_pos_genes<-
+  h3b7503_IgG$pos %>% filter(id %in% h3b7503_IgG_pos_cp_gl_tbl$gene) %>% 
+  select(c("id","pos.p.value", "pos.lfc", "avgfc", "cmean", "tmean" )) %>%
+  left_join(h3b7503_IgG_pos_cp_gl_tbl, by=c("id"="gene")) %>% 
+  arrange(group)
+
+write.xlsx(h3b7503_pos_genes, file="h3b7503_resistance_groups.xlsx")
+
+h3b7503_neg_genes<-
+  h3b7503_IgG$neg %>% filter(id %in% h3b7503_IgG_neg_cp_gl_tbl$gene) %>% 
+  select(c("id", "neg.p.value","neg.lfc", "avgfc", "cmean", "tmean" )) %>%
+  left_join(h3b7503_IgG_neg_cp_gl_tbl, by=c("id"="gene")) %>% 
+  arrange(group)
+
+write.xlsx(h3b7503_neg_genes, file="h3b7503_sensitive_groups.xlsx")
+
+  
+
+```
