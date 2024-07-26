@@ -1,0 +1,223 @@
+---
+title: "EPAT-Chempartner"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = "U:/EPAT/Chempartnerdata")
+library(tidyverse)
+
+##Databse connection
+library("RPostgreSQL")
+library("odbc")
+con <- DBI::dbConnect(PostgreSQL(),
+                      dbname = "synthetic_lethality",
+                      user    = "hbi17457",
+                      password    = "bRXA6hp90UBd8o5P38Cr",
+                      host = "di-comp-bio.cq8sgm5uycqj.us-east-1.rds.amazonaws.com",
+                      port = 5432)
+```
+
+## EPAT Chempartner Analysis
+
+This document is for analyzing EPAT - Chempartner data. The markdown file would do correlation of Relative IC50 values to mRNA and mutation data from CCLE cell-lines data.
+
+## Read chempartner data and tidy them
+
+```{r read data}
+max <- readxl::read_excel("CPB-P19-22824_Summary.xlsx", sheet = "Max Inhibition", skip = 1)
+min <- readxl::read_excel("CPB-P19-22824_Summary.xlsx", sheet = "Min Inhibition", skip = 1)
+abs_ic50 <- readxl::read_excel("CPB-P19-22824_Summary.xlsx", sheet = "ABS", skip = 1)
+rel_ic50 <- readxl::read_excel("CPB-P19-22824_Summary.xlsx", sheet = "Rel", skip = 1)
+auc <- readxl::read_excel("CPB-P19-22824_Summary.xlsx", sheet = "AUC", skip = 1)
+cellannot <- read.csv("cell_line_annot_master_June2020.csv", header = T) %>%
+  select(name, lineage , lineage_subtype) %>%
+  rename(cellline = name)
+
+max <- max %>%
+  tidyr::gather("cellline","Max_inhibition", 2:ncol(max))
+
+min <- min %>%
+  tidyr::gather("cellline","Min_inhibition", 2:ncol(min))
+
+abs_ic50 <- abs_ic50 %>%
+  tidyr::gather("cellline","abs_ic50", 2:ncol(abs_ic50))
+
+rel_ic50 <- rel_ic50 %>%
+  tidyr::gather("cellline","rel_ic50", 2:ncol(rel_ic50))
+
+auc <- auc %>%
+  tidyr::gather("cellline","auc", 2:ncol(auc))
+```
+
+## Merge all different dose response curve parameters into 1 file
+
+
+```{r merge, echo= FALSE}
+data <- merge(max, min , by =c("Compound/cell line" , "cellline"))
+data <- merge(data , abs_ic50 , by = c("Compound/cell line" , "cellline"))
+data <- merge(data , rel_ic50 , by = c("Compound/cell line" , "cellline"))
+data <- merge(data , auc , by = c("Compound/cell line" , "cellline"))
+
+
+data <- data %>%
+  rename(compound = 'Compound/cell line') %>%
+  mutate(abs_ic50 =as.numeric(gsub(">","", abs_ic50))) %>%
+  mutate(rel_ic50 =as.numeric(gsub(">","", rel_ic50))) %>%
+  mutate(log10rel_ic50 = log10(rel_ic50)) %>%
+  mutate(cellline = gsub("-","", cellline))
+
+data <- data %>%
+  mutate(cellline = gsub("-| |/|\\.","", cellline)) %>%
+  mutate(cellline = toupper(cellline))
+
+## Merge cellline annotation file
+data <- merge(data , cellannot , by = "cellline")
+```
+
+
+## Following chunk would fetch CCLE expression data from postgreSQL database
+```{r, echo= FALSE}
+
+CCLE <- dbGetQuery(con,
+                       "SELECT depmap_id, name, gene, log2tpm FROM public.ccle_expression")
+
+```
+
+## Following code correlates IC50 values to mRNA expression values using both Pearson and Spearman method. All the results are exported as text file
+
+```{r Gene expression correlation , echo= FALSE}
+compound_list <- dplyr::pull(data, compound) %>%
+  unique()
+
+
+datalist = list()
+
+for (i in 1:length(compound_list)) {
+specificcompound <- filter(data , compound == compound_list[i])
+
+specificcompound_with_CCLE <- inner_join(specificcompound , CCLE , by = c("cellline" = "name"))
+
+
+CorrelationsOut <-
+  specificcompound_with_CCLE %>%
+  select(
+    compound,
+    cellline,
+    gene,
+    log2tpm,
+    log10rel_ic50) %>%
+  na.omit(.) %>%
+  group_by(compound,gene) %>%
+  summarise(
+    spearman = cor.test(log2tpm,log10rel_ic50,method = "spearman" , exact = FALSE)$estimate,
+    spearman.Pvalue = cor.test(log2tpm,log10rel_ic50,method = "spearman" , exact = FALSE , adjust = none)$p.value ,
+    pearson = cor.test(log2tpm,log10rel_ic50,method = "pearson" , exact = FALSE)$estimate,
+    pearson.Pvalue = cor.test(log2tpm,log10rel_ic50,method = "pearson" , exact = FALSE , adjust = none)$p.value ,
+    df = cor.test(log2tpm,log10rel_ic50,method = "pearson" , exact = FALSE)$parameter
+  )
+
+CorrelationsOut$spearman.adjustPvalue = p.adjust(CorrelationsOut$spearman.Pvalue , method = "BH")
+CorrelationsOut$pearson.adjustPvalue = p.adjust(CorrelationsOut$pearson.Pvalue , method = "BH")
+
+datalist[[i]] <- CorrelationsOut
+}
+
+relic50_data <- dplyr::bind_rows(datalist)
+
+write.table(relic50_data, file = "log10Rel_IC50_Correlation.txt", sep= "\t", row.names = F)
+```
+
+
+## Following code correlates IC50 values to mutation data using KW statistics. All the results are exported as text file
+```{r}
+## Mutation : Read, merge and clean files
+mut <- read.table("CCLE2_mutation_matrix.txt" , sep = "\t" , header = T)
+
+mut <- mut %>%
+  gather(.,"cellline" , "Call", 2:ncol(mut)) %>%
+  mutate(MutationStatus = case_when(Call == "1" ~ "Mut",
+                                    TRUE ~ "WT"))
+
+mut$cellline <- gsub("^X" , "" , mut$cellline)
+mut <- rename(mut , GeneName = Hugo_Symbol)
+mut$MutationStatus <- as.factor(mut$MutationStatus)
+
+
+## Function to do mutation
+
+datalist = list()
+
+
+for (i in 1:length(compound_list)) {
+  specificcompound <- filter(data , compound == compound_list[i])
+  
+  specificCompound_with_CCLEmut <-
+    base::merge(
+      x=mut,
+      y=specificcompound,
+      by = "cellline") %>%
+    filter(complete.cases(.))
+
+  ## Make a table of all the genes whose level/factor is greater than 1 - useful for KW algorithm
+  genelist <- specificCompound_with_CCLEmut %>%
+    filter(complete.cases(.))%>%
+    select(GeneName , MutationStatus) %>%
+    unique()%>%
+    group_by(GeneName) %>%
+    tally() %>%
+    filter(n > 1)
+  
+  mutlist <- specificCompound_with_CCLEmut %>%
+    filter(complete.cases(.))%>%
+    group_by(compound,GeneName) %>%
+    filter(MutationStatus == "Mut") %>%
+    tally()
+  
+  if(nrow(genelist) != 0){  
+    MutCorrelationsOut <-
+      specificCompound_with_CCLEmut %>%
+      filter(GeneName %in% genelist$GeneName) %>%
+      select(
+        cellline,
+        GeneName,
+        MutationStatus,
+        compound,
+        log10rel_ic50) %>% 
+      group_by(compound,GeneName) %>%
+      #dplyr::mutate(mut_n = length(MUTATIONSTATUS == "MUT")) %>%
+      dplyr::summarise(
+        hstat = kruskal.test(log10rel_ic50, MutationStatus , p.adjust = "bonferroni" , kw=TRUE)$statistic,
+        pvalue = kruskal.test(log10rel_ic50, MutationStatus)$p.value
+      )
+  
+    MutCorrelationsOut$adjustPvalue = p.adjust(MutCorrelationsOut$pvalue , method = "BH")
+    
+    summary <- specificCompound_with_CCLEmut %>%
+      group_by(GeneName , compound , MutationStatus) %>%
+      summarise(Mean = mean(log10rel_ic50)) %>%
+      tidyr::spread(MutationStatus , Mean) %>%
+      mutate(FoldChange = (Mut - WT)) %>%
+      mutate(Direction = case_when(FoldChange > 0 ~ "Positive",
+                                   TRUE ~ "Negative"))
+    
+    MutCorrelationsOut <- base::merge(
+      MutCorrelationsOut,
+      mutlist,
+      by = "GeneName") %>%
+      select(-compound.y) %>% 
+      rename(compound = compound.x) %>%
+      left_join(summary, by = c("compound" , "GeneName"))
+  
+  }
+  datalist[[i]] <- MutCorrelationsOut
+}
+
+mut_data <- dplyr::bind_rows(datalist)
+
+  
+write.table(mut_data, file = "log10Rel_IC50_MutCorrelation.txt", sep= "\t", row.names = F)  
+  
+
+```
+
