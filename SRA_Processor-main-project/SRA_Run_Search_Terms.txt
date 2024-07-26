@@ -1,0 +1,19 @@
+#Go to https://www.ncbi.nlm.nih.gov/sra
+
+#Go to 
+https://www.ncbi.nlm.nih.gov/sra
+#Search for Terms, download via send to File select SRARunInfo
+
+#Focus on Cannabis Plant Data
+Search Terms (Cannabis) AND "Cannabis"[orgn:__txid3482]
+2021.07.30-Cannabis_plant-SraRunInfo.csv
+
+#Capture all data that mentions Cannabis
+2021.07.30-Cannabis_all-SraRunInfo.csv
+
+
+
+
+
+
+
