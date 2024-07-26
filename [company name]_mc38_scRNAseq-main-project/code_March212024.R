@@ -1,0 +1,6493 @@
+library(Seurat)
+library(DropletUtils)
+library(ggpmisc)
+library(ggplot2)
+library(ProjecTILs)
+library(Azimuth)
+
+
+#Setting the color schemes:
+c25 <- c("dodgerblue2",
+         "#E31A1C", # red
+         "green4",
+         "#6A3D9A", # purple
+         "#FF7F00", # orange
+         "black","gold1",
+         "skyblue2",
+         "#FB9A99", # lt pink
+         "palegreen2",
+         "#CAB2D6", # lt purple
+         "#FDBF6F", # lt orange
+         "gray70", "khaki2",
+         "maroon","orchid1","deeppink1","blue1","steelblue4",
+         "darkturquoise","green1","yellow4","yellow3",
+         "darkorange4","brown","yellow","lightblue1","maroon1")
+
+################################################# ct26 mouse model:
+pbs_dir<-"/home/hhassan/murine_dataset/ct26/23-038-PBS-none_GEX_results_GEX"
+x251_dir<-"/home/hhassan/murine_dataset/ct26/23-038-x251_GEX_results_GEX"
+x310_dir<-"/home/hhassan/murine_dataset/ct26/23-038-x310_GEX_results_GEX"
+x352_dir<-"/home/hhassan/murine_dataset/ct26/23-038-x352_GEX_results_GEX"
+
+pbs_ct26  <- Read10X(data.dir = pbs_dir)
+x251_ct26 <- Read10X(data.dir = x251_dir)
+x310_ct26 <- Read10X(data.dir = x310_dir)
+x352_ct26 <- Read10X(data.dir = x352_dir)
+
+pbs_ct26_data <- CreateSeuratObject(counts = pbs_ct26)
+x251_ct26_data <- CreateSeuratObject(counts = x251_ct26)
+x310_ct26_data <- CreateSeuratObject(counts = x310_ct26)
+x352_ct26_data <- CreateSeuratObject(counts = x352_ct26)
+
+#Add treatment barcodes to the metadata:
+pbs_ct26_data@meta.data$treatment_status <- paste0(sapply(rownames(pbs_ct26_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-ct26_PBS", pbs_ct26_data@meta.data$treatment_status)
+x251_ct26_data@meta.data$treatment_status <- paste0(sapply(rownames(x251_ct26_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-ct26_x251", x251_ct26_data@meta.data$treatment_status)
+x310_ct26_data@meta.data$treatment_status <- paste0(sapply(rownames(x310_ct26_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-ct26_x310", x310_ct26_data@meta.data$treatment_status)
+x352_ct26_data@meta.data$treatment_status <- paste0(sapply(rownames(x352_ct26_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-ct26_x352", x352_ct26_data@meta.data$treatment_status)
+
+
+
+#Add mitochondrial and ribosomal reads into the  metadata and then apply filter
+pbs_ct26_data[["percent.mt"]] <- PercentageFeatureSet(pbs_ct26_data, pattern = "^mt-", assay = "RNA")
+pbs_ct26_data[["percent.ribo"]] <- PercentageFeatureSet(pbs_ct26_data, pattern = "Rn45s", assay = "RNA")
+
+x251_ct26_data[["percent.mt"]] <- PercentageFeatureSet(x251_ct26_data, pattern = "^mt-", assay = "RNA")
+x251_ct26_data[["percent.ribo"]] <- PercentageFeatureSet(x251_ct26_data, pattern = "^RP[SL]", assay = "RNA")
+
+x310_ct26_data[["percent.mt"]] <- PercentageFeatureSet(x310_ct26_data, pattern = "^mt-", assay = "RNA")
+x310_ct26_data[["percent.ribo"]] <- PercentageFeatureSet(x310_ct26_data, pattern = "^RP[SL]", assay = "RNA")
+
+x352_ct26_data[["percent.mt"]] <- PercentageFeatureSet(x352_ct26_data, pattern = "^mt-", assay = "RNA")
+x352_ct26_data[["percent.ribo"]] <- PercentageFeatureSet(x352_ct26_data, pattern = "^RP[SL]", assay = "RNA")
+
+pbs_ct26_data_2 <- subset(pbs_ct26_data, cells = colnames(pbs_ct26_data)[which(pbs_ct26_data@meta.data$nFeature_RNA > 200 & pbs_ct26_data@meta.data$nFeature_RNA < 4000 & pbs_ct26_data@meta.data$percent.mt < 5)])
+x251_ct26_data_2 <- subset(x251_ct26_data, cells = colnames(x251_ct26_data)[which(x251_ct26_data@meta.data$nFeature_RNA > 200 & x251_ct26_data@meta.data$nFeature_RNA < 4000 & x251_ct26_data@meta.data$percent.mt < 5)])
+x310_ct26_data_2 <- subset(x310_ct26_data, cells = colnames(x310_ct26_data)[which(x310_ct26_data@meta.data$nFeature_RNA > 200 & x310_ct26_data@meta.data$nFeature_RNA < 4000 & x310_ct26_data@meta.data$percent.mt < 5)])
+x352_ct26_data_2 <- subset(x352_ct26_data, cells = colnames(x352_ct26_data)[which(x352_ct26_data@meta.data$nFeature_RNA > 200 & x352_ct26_data@meta.data$nFeature_RNA < 4000 & x352_ct26_data@meta.data$percent.mt < 5)])
+
+################################## ------- VISUALIZING QC:
+#Generate a dataframe with the number of cells remaining. 
+data_ct26_scrnaseq <- data.frame("pbs_ct26_before"=as.numeric(pbs_ct26_data@meta.data %>% nrow()),
+                               "pbs_ct26_after"=as.numeric(pbs_ct26_data_2@meta.data %>% nrow()),
+                               "x251_ct26_before"=as.numeric(x251_ct26_data@meta.data %>% nrow()),
+                               "x251_ct26_after"=as.numeric(x251_ct26_data_2@meta.data %>% nrow()),
+                               "x310_ct26_before"=as.numeric(x310_ct26_data@meta.data %>% nrow()),
+                               "x310_ct26_after"=as.numeric(x310_ct26_data_2@meta.data %>% nrow()),
+                               "x352_ct26_before"=as.numeric(x352_ct26_data@meta.data %>% nrow()),
+                               "x352_ct26_after"=as.numeric(x352_ct26_data_2@meta.data %>% nrow())
+)
+
+write.table(data_ct26_scrnaseq,"ct26_cellcounts_scRNAseq_filtering.txt",sep="\t")
+
+df_long_ct26 <- reshape2::melt(data_ct26_scrnaseq, id.vars = NULL, measure.vars = c( 
+  "pbs_ct26_before", "pbs_ct26_after",
+  "x251_ct26_before", "x251_ct26_after",
+  "x310_ct26_before", "x310_ct26_after",
+  "x352_ct26_before", "x352_ct26_after"
+))
+
+jpeg("Absolute_cell_counts_before_after_filtering_ct26.jpeg",height=4,width=8,units="in",res=600)
+ggplot(df_long_ct26, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "QC Filters") +
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 3000, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 5000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+####################################################################################
+####################################################################################
+####################################################################################
+##############Integration of the scRNAseq dataset:
+ct26_object_list<- c(pbs_ct26_data_2,
+                     x251_ct26_data_2,
+                     x310_ct26_data_2,
+                     x352_ct26_data_2
+)
+
+#Perform sctransform on each object. But first confirm the default assay for each.
+for (i in 1:length(ct26_object_list)) {
+  print(DefaultAssay(ct26_object_list[[i]]))
+}
+#for (i in 1:length(object_list_rna)) {
+# DefaultAssay(object_list_rna[[i]]) <- "SCT"
+#}
+for (i in 1:length(ct26_object_list)) {
+  ct26_object_list[[i]] <- SCTransform(ct26_object_list[[i]], vars.to.regress = "percent.mt", variable.features.n = 15000, verbose = TRUE)
+}
+
+#Access a specific object within the list of seurat objects:
+ct26_object_list[[3]]@assays$SCT
+
+#Now integrate the datasets.
+ct26_object_list_features <- SelectIntegrationFeatures(object.list = ct26_object_list, nfeatures = 15000)
+ct26_object_list <- PrepSCTIntegration(object.list = ct26_object_list, anchor.features = ct26_object_list_features, 
+                                       verbose = TRUE)
+#saveRDS(crc_object_list_rna,"crc_object_list_rna_preintegration_WITHOUTPT10.rds")
+#saveRDS(crc_object_list_rna.anchors2,"crc_anchors_usingreference.rds")
+ct26_object_list.anchors <- FindIntegrationAnchors(object.list = ct26_object_list, normalization.method = "SCT", 
+                                                   anchor.features = ct26_object_list_features, verbose = TRUE)
+ct26_object_list_rna_integrated <- IntegrateData(anchorset = ct26_object_list.anchors, normalization.method = "SCT", 
+                                                 verbose = TRUE)
+
+#Now add the reductions and DON'T SCALE!
+DefaultAssay(ct26_object_list_rna_integrated)
+
+#Add treatment
+ct26_object_list_rna_integrated@meta.data$Treatment <- sub(".+_", "", ct26_object_list_rna_integrated@meta.data$treatment_status)
+
+#SAVE RDS OBJECT:
+saveRDS(ct26_object_list_rna_integrated,"ct26_object_list_rna_integrated_unclustered.rds")
+
+####################################################RESOLUTIONS
+ct26_object_list_rna_integrated <- ct26_object_list_rna_integrated %>% 
+  RunPCA(verbose = T,reduction.name = 'RNA_PCA',reduction.key='RNA_PCA_') %>% 
+  RunUMAP(reduction = "RNA_PCA", dims = 1:30, reduction.name = 'RNA_UMAP', reduction.key='RNA_UMAP_') %>%
+  FindNeighbors(reduction = "RNA_PCA", dims = 1:30) %>%
+  FindClusters(resolution = 0.05) %>%
+  FindClusters(resolution = 0.125) %>%
+  FindClusters(resolution = 0.2) %>%
+  FindClusters(resolution = 0.3) %>%
+  FindClusters(resolution = 0.4) %>%
+  FindClusters(resolution = 0.5) %>%
+  FindClusters(resolution = 0.6) %>%
+  FindClusters(resolution = 0.7) %>%
+  FindClusters(resolution = 0.8) %>%
+  FindClusters(resolution = 0.9) %>%
+  FindClusters(resolution = 1.0) %>%
+  FindClusters(resolution = 1.2)
+
+#Visualize the UMAP
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.6",
+             cols = c25)
+
+jpeg("Dimplot_all_IntegratedObject_res0.6_RNA_CT26.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.6",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.5_RNA_CT26.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.5",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.4_RNA_CT26.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.3_RNA_CT26.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+####################################################RESOLUTIONS
+
+####################################################
+####################################################
+#########FEATURE PLOTS
+####################################################
+####################################################
+ct26_object_list_rna_integrated <- FindClusters(object = ct26_object_list_rna_integrated, resolution = 0.6)
+
+jpeg("FeaturePlot_CD8&CD4_RNAdefault.jpeg",height=8,width=12,units="in",res=600)
+cd8 <- FeaturePlot(ct26_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = "integrated_Cd8a",
+                   min.cutoff = "q25",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd4 <- FeaturePlot(ct26_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q25",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd8 / cd4
+dev.off()
+
+#CD4 and FOXP3
+jpeg("FeaturePlot_CD4&FOXP3_RNAdefault.jpeg",height=8,width=12,units="in",res=600)
+foxp3 <- FeaturePlot(ct26_object_list_rna_integrated,
+                     reduction  = "RNA_UMAP",
+                     features = "integrated_Foxp3",
+                     min.cutoff = "q25",
+                     max.cutoff = "q95",
+                     split.by="Treatment",
+                     order = T)
+cd4 <- FeaturePlot(ct26_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q25",
+                   max.cutoff = "q95",
+                   split.by="Treatment", order=T)
+cd4 / foxp3
+
+dev.off()
+
+#VlnPlot RNA default
+jpeg("violinplot_CD8_CD4_RNADefault.jpeg",height=4,width=12,units="in",res=600)
+VlnPlot(ct26_object_list_rna_integrated,features=c("integrated_Cd8a","integrated_Cd4"),stack=TRUE,flip=TRUE,pt.size = 0)
+dev.off()
+jpeg("violinplot_foxp3_rna_RNAdefault.jpeg",height=4,width=6,units="in",res=600)
+VlnPlot(ct26_object_list_rna_integrated,features=c("integrated_Foxp3"),stack=FALSE,flip=TRUE,pt.size = 0)
+dev.off()
+
+#VlnPlot QC------------------------------------:
+ct26_object_list_rna_integrated_unclustered<-readRDS("ct26_object_list_rna_integrated_unclustered.rds")
+jpeg("qc_ncountRNA.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(ct26_object_list_rna_integrated_unclustered,features=c("nCount_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_nfeature.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(ct26_object_list_rna_integrated_unclustered,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_percentmito.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(ct26_object_list_rna_integrated_unclustered,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+
+
+jpeg("qc_smoothscatter-nsclc.jpeg",height=4,width=6,units="in",res=600)
+par(mfrow=c(1,2), bty="n")
+smoothScatter(log10(ct26_object_list_rna_integrated_unclustered$nCount_RNA), log10(ct26_object_list_rna_integrated_unclustered$nFeature_RNA), 
+              xlab="log10(Library sizes)", ylab="log10(# of expressed genes)", 
+              nrpoints=500, cex=0.5) #Graph of ncount RNA vs nFeature RNA 
+smoothScatter(ct26_object_list_rna_integrated_unclustered$percent.ribo, ct26_object_list_rna_integrated_unclustered$percent.mt,ylim=c(0,100), xlim=c(0,100),xlab="Ribosome prop. (%)", ylab="Mitochondrial prop. (%)",nrpoints=500, cex=0.5) #Graph of percent mito and percent ribo in your features
+abline(h=5,  lty=1)
+abline(v=10, lty=1)
+dev.off()
+
+
+#Save the clustered dataset:
+saveRDS(ct26_object_list_rna_integrated,"ct26_object_list_rna_integrated_clustered.rds")
+
+
+################################ labeling clusters:
+new_labels<-c("CD8_Tcells", #0
+              "CD8_Tcells", #1
+              "CD8_Tcells", #2
+              "CD4_Tcells", #3
+              "CD8_Tcells",          #4
+              "CD8_Tcells",          #5
+              "CD8_Tcells", #6
+              "CD8_Tcells", #7
+              "CD8_Tcells",          #8
+              "CD8_CD4_Double_Positive_Tcells", #9
+              "CD4_Tregs", #10
+              "CD8_Tcells",         #11
+              "CD4_Tcells", #12
+              "Other",          #13
+              "CD4_Tcells",   #14
+              "Other"       #15
+)
+
+
+#relable clusters:
+names(new_labels)<- levels(ct26_object_list_rna_integrated)
+ct26_object_list_rna_integrated <- RenameIdents(object = ct26_object_list_rna_integrated, new_labels)
+
+#Now adding the updated labels to metadata
+ct26_object_list_rna_integrated@meta.data$CD4_CD8_TREG_LABELS <- ct26_object_list_rna_integrated@active.ident
+
+levels(ct26_object_list_rna_integrated)
+
+#Plotting the DimPlot
+jpeg("Dimplot_all_IntegratedObject_res0.6_CD4_CD8_CT26.jpeg",height=4,width=13,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(ct26_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+#Save the clustered dataset:
+saveRDS(ct26_object_list_rna_integrated,"ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled.rds")
+
+#Get Sums:------------------------------------
+sum(ct26_object_list_rna_integrated@meta.data$Treatment == "PBS")
+sum(ct26_object_list_rna_integrated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated@meta.data$CD4_CD8_TREG_LABELS =="CD8_Tcells")
+
+
+####################################################################################
+####################################################################################automatic annotation of celltypes
+####################---ProjectTil---####################
+##########NOW Running PROJECTILS----####################
+library(AUCell)
+library(SingleCellExperiment)
+library(TILPRED)
+library(ProjecTILs)
+library(celldex)
+library(SingleR)
+
+score_cd <- function(object) {
+  vector <- object@meta.data$TILPRED_TIL %>% unique()
+  scores <- vector("numeric",length=length(vector))
+  dataframe <- object@meta.data
+  for (i in seq_along(vector)) {
+    data <- dataframe[which(dataframe$TILPRED_TIL == as.character(vector[[i]])),]
+    scores[i] <-as.numeric(mean(data$TILPRED_TIL_score))
+  }
+  df <- data.frame(labels = vector, confidence_score = scores)
+  return(df)
+}
+
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled <- readRDS("ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled.rds")
+
+
+
+#Now Subset by CD8, CD4 and others:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4 <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled,subset=CD4_CD8_TREG_LABELS=="CD4_Tcells" | CD4_CD8_TREG_LABELS=="CD4_Tregs")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8 <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled,subset=CD4_CD8_TREG_LABELS=="CD8_Tcells")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_other <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled,subset=CD4_CD8_TREG_LABELS=="Other")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_double <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled,subset=CD4_CD8_TREG_LABELS=="CD8_CD4_Double_Positive_Tcells")
+
+ref_cd4 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD4T_human_ref_v1.rds")
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD8T_human_ref_v1.rds")
+refCols <- c("#edbe2a", "#A58AFF", "#53B400", "#F8766D", "#00B6EB", "#d1cfcc", "#FF0000", "#87f6a5", "#e812dd")
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3")
+
+#Load the required datatables:
+cell.cycle.obj <- ProjecTILs::cell.cycle.obj
+Hs2Mm.convert.table <- ProjecTILs::Hs2Mm.convert.table
+
+#################Labeling CD4 -------------------:
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4) <- "RNA"
+query.projected.cd4 <- ProjecTILs::make.projection(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4, ref=ref_cd4, filter.cells = F) #This reduces the number of cells down to 12999. So you cannot merge the datasets!
+#query.projected.cd4 <- ProjecTILs::Run.ProjecTILs(NSLSC_object_list_rna_integrated_all, ref=ref_cd4)
+#Plot the projections:
+#ProjecTILs::plot.projection(ref_cd4, query.projected.cd4, linesize = 0.5, pointsize = 0.5)
+query.projected.cd4 <- ProjecTILs::cellstate.predict(ref=ref_cd4, query=query.projected.cd4)
+#Now add this to the original dataset:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4@meta.data$TILPRED_TIL<- query.projected.cd4@meta.data$functional.cluster
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4@meta.data$TILPRED_TIL_score <- query.projected.cd4@meta.data$functional.cluster.conf
+
+
+#################Labeling CD8 -------------------:
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8) <- "RNA"
+query.projected.cd8 <- ProjecTILs::make.projection(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8, ref=ref_cd8, filter.cells = F) 
+#Plot the projections:
+query.projected.cd8 <- ProjecTILs::cellstate.predict(ref=ref_cd8, query=query.projected.cd8)
+#Now add this to the original dataset:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8@meta.data$TILPRED_TIL<- query.projected.cd8@meta.data$functional.cluster
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8@meta.data$TILPRED_TIL_score <- query.projected.cd8@meta.data$functional.cluster.conf
+
+
+#################Labeling others -------------------:
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_other) <- "RNA"
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_other@meta.data$TILPRED_TIL <- as.character("NA")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_other@meta.data$TILPRED_TIL_score <- as.numeric(0)
+
+###########Labeling double;
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_double) <- "RNA"
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_double@meta.data$TILPRED_TIL <- as.character("Double_Positive")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_double@meta.data$TILPRED_TIL_score <- as.numeric(0)
+
+
+#Now Merge the objects back:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated<- merge(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD4,y=c(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_CD8, ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_other,ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_double), merge.data = TRUE)
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated[["RNA_PCA"]] <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled[["RNA_PCA"]]
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated[["RNA_UMAP"]] <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled[["RNA_UMAP"]]
+
+
+#Generate a dataframe with the scores and then plot them using ggplot2
+score_cd(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated)
+
+#Count cells:
+cell_cluster_number<- cell_cluster_count(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated)
+
+#UMAP of annotated cells
+jpeg("Dimplot_annotated_UMAP_SPICA.jpeg",height=4,width=5,units="in",res=600)
+rna <- DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,reduction="RNA_UMAP",group.by = "TILPRED_TIL",cols =c25)
+rna
+dev.off()
+
+# Create the bar plot
+jpeg("Cell_count_annotated_cluster_SPICA.jpeg",height=6,width=10,units="in",res=600)
+plot <- ggplot(cell_cluster_number, aes(x = labels, y = confidence_score, fill = labels)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Cell Count by Annotation", x = "Annotation", y = "Absolute Cell Count") +
+  geom_hline(yintercept = 200, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot
+dev.off()
+####################---ProjectTil---####################
+saveRDS(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,"ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated.rds")
+
+jpeg("UMAP_ANNOTATED_SPICA.jpeg",height=4,width=12,units="in",res=600)
+rna<-DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             group.by= "TILPRED_TIL",
+             cols = c25)
+rna 
+dev.off()
+
+#Generate a table of cell count by treatment:
+#Generate a dataframe with the number of cells remaining. 
+data_ct26_scrnaseq_annotation <- data.frame("pbs_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x251_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x310_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x352_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            
+                                            "pbs_CD4_CTL_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x251_CD4_CTL_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x310_CD4_CTL_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x352_CD4_CTL_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                              
+                                            "pbs_CD4_CTL_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x251_CD4_CTL_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x310_CD4_CTL_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x352_CD4_CTL_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            
+                                            "pbs_CD4_Th17"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x251_CD4_Th17"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x310_CD4_Th17"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x352_CD4_Th17"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            
+                                            "pbs_CD4_EOMES"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x251_CD4_EOMES"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x310_CD4_EOMES"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x352_CD4_EOMES"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            
+                                            "pbs_CD4_GNLY"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x251_CD4_GNLY"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x310_CD4_GNLY"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x352_CD4_GNLY"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            
+                                            "pbs_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x251_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x310_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x352_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            
+                                            "pbs_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x251_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x310_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x352_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.CM")),
+                                            
+                                            "pbs_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x251_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x310_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x352_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.EM")),
+                                            
+                                            "pbs_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x251_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x310_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x352_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            
+                                            "pbs_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x251_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x310_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x352_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            
+                                            "pbs_CD8_TEMRA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x251_CD8_TEMRA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x310_CD8_TEMRA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x352_CD8_TEMRA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            
+                                            "pbs_NA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "NA")),
+                                            "x251_NA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "NA")),
+                                            "x310_NA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "NA")),
+                                            "x352_NA"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "NA")),
+                                            
+                                            "pbs_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "Double_Positive")),
+                                            "x251_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "Double_Positive")),
+                                            "x310_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "Double_Positive")),
+                                            "x352_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated$TILPRED_TIL == "Double_Positive"))
+                                            
+                                            
+)
+
+write.table(data_ct26_scrnaseq_annotation,"ct26_cellcounts_scRNAseq_SPICA_annotation.txt",sep="\t")
+
+df_long_ct26_SPICA_ANNOTATIN_CD4 <- reshape2::melt(data_ct26_scrnaseq_annotation, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD4_Tfh", "x251_CD4_Tfh", "x310_CD4_Tfh", "x352_CD4_Tfh",
+    "pbs_CD4_CTL_Exh", "x251_CD4_CTL_Exh", "x310_CD4_CTL_Exh", "x352_CD4_CTL_Exh",
+    "pbs_CD4_CTL_Naive", "x251_CD4_CTL_Naive", "x310_CD4_CTL_Naive", "x352_CD4_CTL_Naive",
+    "pbs_CD4_Th17", "x251_CD4_Th17", "x310_CD4_Th17", "x352_CD4_Th17",
+    "pbs_CD4_EOMES", "x251_CD4_EOMES", "x310_CD4_EOMES", "x352_CD4_EOMES",
+    "pbs_CD4_GNLY", "x251_CD4_GNLY", "x310_CD4_GNLY", "x352_CD4_GNLY",
+    "pbs_NA", "x251_NA", "x310_NA", "x352_NA","pbs_Douple_Positive", "x251_Douple_Positive", "x310_Douple_Positive", "x352_Douple_Positive")
+))
+
+df_long_ct26_SPICA_ANNOTATIN_CD8 <- reshape2::melt(data_ct26_scrnaseq_annotation, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD8_TEX", "x251_CD8_TEX", "x310_CD8_TEX", "x352_CD8_TEX",
+    "pbs_CD8_CM", "x251_CD8_CM", "x310_CD8_CM", "x352_CD8_CM",
+    "pbs_CD8_EM", "x251_CD8_EM", "x310_CD8_EM", "x352_CD8_EM",
+    "pbs_CD8_TPEX", "x251_CD8_TPEX", "x310_CD8_TPEX", "x352_CD8_TPEX",
+    "pbs_CD8_Naive", "x251_CD8_Naive", "x310_CD8_Naive", "x352_CD8_Naive",
+    "pbs_CD8_TEMRA", "x251_CD8_TEMRA", "x310_CD8_TEMRA", "x352_CD8_TEMRA"
+  )
+))
+
+
+jpeg("Absolute_cell_counts_CT26_annotation_SPICA_CD4.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_ct26_SPICA_ANNOTATIN_CD4, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 100, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 150, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_CT26_annotation_SPICA_CD8.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_ct26_SPICA_ANNOTATIN_CD8, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+#################################################
+#################################################
+#####MANUAL ANNOTATION
+#################################################
+#################################################
+#################################################
+###This is the RDS object:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated <- readRDS("ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated.rds")
+#################################################
+###This is the RDS object:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4 <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,subset=CD4_CD8_TREG_LABELS=="CD4_Tcells" |CD4_CD8_TREG_LABELS=="CD4_Tregs")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8 <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,subset=CD4_CD8_TREG_LABELS=="CD8_Tcells")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_other <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,subset=CD4_CD8_TREG_LABELS=="Other")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_double <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated,subset=CD4_CD8_TREG_LABELS=="CD8_CD4_Double_Positive_Tcells")
+#################################################
+#################################################
+###Function:
+sum_values_by_key_auto <- function(data, key_column, value_column) {
+  result <- data %>%
+    group_by(across({{ key_column }})) %>%
+    summarise(Sum = mean({{ value_column }}))
+  return(result)
+}
+
+##### Gene markers:::----------------
+project_tils_markers <- c("integrated_Cd4","integrated_Cd8a","integrated_Ccr7","integrated_TCF7","integrated_PDCD1","integrated_HAVCR2","integrated_TOX","integrated_IZUMO1R","integrated_CXCR6","integrated_XCL1","integrated_GZMB","integrated_GZMK","integrated_IFNG","integrated_FOXP3")
+#IL7R is cd127; PECAM is CD31; 
+#Naive mine: PECAM is CD31,  IL7RA is CD127; CD122 is IL2RB; sell1 is CD62; naive are high for CCR7;SELL is CD62L, 
+genes_memory_naive_revisited<-c("integrated_Cd28","integrated_Cd27","integrated_Il7r","integrated_CcR7","integrated_Sell","integrated_Il2rb","integrated_Tcf7")
+#May have overlapping signatures based on just exhausted.
+genes_precursor_exhausted <- c("integrated_Pdcd1","integrated_Cxcr5","integrated_Lag3","integrated_Gzmb","integrated_Cd244")
+#HAVCR2 is TIM3; CD244 is 2B4; CD160 a marker of highly exhausted CD8+ T cells. TPEX are PDCD1+,CXCR5+,TCF1+,LAG3+,TIM3-,2B4-,GZMB-. Transcript,ional regulator of Tcell exhaustion (TOX)
+genes_exhausted<- c("integrated_Pdcd1","integrated_Lag3","integrated_Havcr2","integrated_Cd160","integrated_Ctla4","integrated_Btla4")
+#Distinguish EM vs EFF based on signatures
+##CD25 is IL2RA; CD127 is IL7RA; TEM are CD25/IL2RA-, CD127/IL7RA+, CD45RO+/CD45RA-; EFF are CD25/IL2RA+, CD45RA+, CD127/IL7RA-. According to another, TEM are suppose to be CD127-/IL7R-
+genes_effector_mine <- c("integrated_Il2ra","integrated_Gzmk","integrated_Ccr7","integrated_Gzma","integrated_Prf1","integrated_Ifng","integrated_Lamp1")
+#Just two for Tregs
+genes_treg <- c("integrated_Foxp3")
+
+
+##### Gene markers:::SEB:::----------------
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3","Cd160")
+genes2check <- c("Cd8a", "Cd8b1", "Gzmk", "Gzmb", "Cd69", "Ccr7", "Sell",  "Ifng","Cd4", "Itgae","Cx3cr1", "Ctla4", "Lag3", "Pdcd1", "Cxcr6",  "Cd14","Btla")
+
+########CELL POPULATIONS FROM SEB:
+##CD4_treg, 
+#CD4_CM	
+#CD4_Effector	
+#CD4_Effector_Memory	
+#CD4_Precursor_Exhausted	
+#CD4_T_helper	
+#CD4_Treg	
+#CD8_Effector	
+#CD8_Exhauted	
+#CD8_Effector_Memory	
+#CD8_Exhausted	
+#CD8_Memory_Exhausted	
+#CD8_Naive_CM	
+#CD8_Precursor_Exhausted
+#Other
+
+
+------------------------------------------------------------------------------
+  #Now annotating CD4 T cells---------------------------------------
+------------------------------------------------------------------------------
+  
+  #10 : Treg
+  #3: T helper cell according to spica and high CXCR5, IL7R, TCF7
+  #12:Naive T cells becuase of high CD28, TCF7, SELL/Cd62l, IL7R/CD127, 
+  #14: Exhausted due to high LAG3 #Jonathan and Allart relabeled this to "Other"
+  
+cluster_3 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data$seurat_clusters == "3"),])
+cluster_3_keyresult <- sum_values_by_key_auto(cluster_3,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_14 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data$seurat_clusters == "14"),])
+cluster_14_keyresult <- sum_values_by_key_auto(cluster_14,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_12 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data$seurat_clusters == "12"),])
+cluster_12_keyresult <- sum_values_by_key_auto(cluster_12,TILPRED_TIL,TILPRED_TIL_score)
+
+##Now Attaching labels
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4@meta.data$Annotations_New <- ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4$seurat_clusters == "10", "CD4_Treg",
+                                                                                                            ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4$seurat_clusters == "3", "CD4_Th",
+                                                                                                                   ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4$seurat_clusters == "12","CD4_Naive",
+                                                                                                                          "Other")))
+
+
+DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,group.by="TILPRED_TIL",cols=c25)
+jpeg("Vlnplot_cd4_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+e= VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,features=genes_treg,stack=FALSE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d|e
+dev.off()
+
+
+jpeg("SPICA_COUNTS_CD4.jpeg",height=4,width=12,units="in",res=600)
+a = ggplot(cluster_3_keyresult, aes(x = TILPRED_TIL, y = Sum)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "SPICA Annotation", y = "SPICA Score",title="Cluster 3") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+b = ggplot(cluster_14_keyresult,  aes(x = TILPRED_TIL, y = Sum)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "SPICA Annotation", y = "SPICA Score",title="Cluster 14") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+c = ggplot(cluster_12_keyresult,  aes(x = TILPRED_TIL, y = Sum)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "SPICA Annotation", y = "SPICA Score",title="Cluster 12") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+a |b|c
+dev.off()
+
+
+------------------------------------------------------------------------------
+  #Now annotating CD8 T cells---------------------------------------
+------------------------------------------------------------------------------
+  #2: Exhausted
+  #1: Exhausted
+  #4: Exhausted
+  #8: TPEX
+  #7: EM
+  #6: exhausted
+  #11: EFF ### Jonathan and Allart relabeled this as EM as well
+  #5: Naive
+  #0: CM
+  
+  cluster_5 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "5"),])
+cluster_5_keyresult <- sum_values_by_key_auto(cluster_5,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_0 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "0"),])
+cluster_0_keyresult <- sum_values_by_key_auto(cluster_0,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_6 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "6"),])
+cluster_6_keyresult <- sum_values_by_key_auto(cluster_6,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_2 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "2"),])
+cluster_2_keyresult <- sum_values_by_key_auto(cluster_2,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_8 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "8"),])
+cluster_8_keyresult <- sum_values_by_key_auto(cluster_8,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_4 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "4"),])
+cluster_4_keyresult <- sum_values_by_key_auto(cluster_4,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_1 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "1"),])
+cluster_1_keyresult <- sum_values_by_key_auto(cluster_1,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_7 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "7"),])
+cluster_7_keyresult <- sum_values_by_key_auto(cluster_7,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_11 <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$seurat_clusters == "11"),])
+cluster_11_keyresult <- sum_values_by_key_auto(cluster_11,TILPRED_TIL,TILPRED_TIL_score)
+
+
+########################################################################################
+####Annotating CD8s using virus specific LCMV dataset to confirm the annotations.
+saveRDS(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,"ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8.rds")
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv <- readRDS("ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8.rds")
+
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/mouse/ref_LCMV_Atlas_mouse_v1.rds")
+
+#Load the required datatables:
+cell.cycle.obj <- ProjecTILs::cell.cycle.obj
+Hs2Mm.convert.table <- ProjecTILs::Hs2Mm.convert.table
+
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv) <- "RNA"
+query.projected.cd8 <- ProjecTILs::make.projection(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv, ref=ref_cd8, filter.cells = F) 
+#Plot the projections:
+query.projected.cd8 <- ProjecTILs::cellstate.predict(ref=ref_cd8, query=query.projected.cd8)
+#Now add this to the original dataset:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$TILPRED_TIL_mouse <- query.projected.cd8@meta.data$functional.cluster
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$TILPRED_TIL_score_mouse <- query.projected.cd8@meta.data$functional.cluster.conf
+#Save this RDS File:
+saveRDS(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv,"ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv.rds")
+
+#######Now annotate seurat clusters:
+cluster_11_lcmv <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$seurat_clusters == "11"),])
+cluster_11_keyresult_lcmv <- sum_values_by_key_auto(cluster_11_lcmv,TILPRED_TIL_mouse,TILPRED_TIL_score_mouse)
+
+cluster_0_lcmv <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$seurat_clusters == "0"),])
+cluster_0_keyresult_lcmv <- sum_values_by_key_auto(cluster_0_lcmv,TILPRED_TIL_mouse,TILPRED_TIL_score_mouse)
+
+cluster_7_lcmv <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$seurat_clusters == "7"),])
+cluster_7_keyresult_lcmv <- sum_values_by_key_auto(cluster_7_lcmv,TILPRED_TIL_mouse,TILPRED_TIL_score_mouse)
+
+cluster_8_lcmv <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$seurat_clusters == "8"),])
+cluster_8_keyresult_lcmv <- sum_values_by_key_auto(cluster_8_lcmv,TILPRED_TIL_mouse,TILPRED_TIL_score_mouse)
+
+cluster_2_lcmv <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8_lcmv@meta.data$seurat_clusters == "2"),])
+cluster_2_keyresult_lcmv <- sum_values_by_key_auto(cluster_2_lcmv,TILPRED_TIL_mouse,TILPRED_TIL_score_mouse)
+
+########################################################################################
+########################################################################################
+
+####Annotate clusters:
+#2: Exhausted
+#1: Exhausted
+#4: Exhausted
+#8: TPEX
+#7: EM
+#6: exhausted
+#11: EFF
+#5: Naive
+#0: CM
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8@meta.data$Annotations_New <- ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters == "0", "CD8_CM",
+                                                                                                            ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters == "8", "CD8_TPEX",
+                                                                                                                   ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters == "7" | 
+                                                                                                                            ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters == "11","CD8_EM", 
+                                                                                                                          #ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters == "11", "CD8_TEFF",
+                                                                                                                          ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8$seurat_clusters=="5","CD8_Naive",
+                                                                                                                                 "CD8_Exhausted"))))
+#DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,group.by="TILPRED_TIL",cols=c25)
+
+jpeg("Vlnplot_cd8_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d
+dev.off()
+
+------------------------------------------------------------------------------
+  #Now annotating Other T cells---------------------------------------
+------------------------------------------------------------------------------
+  ####Other:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_other@meta.data$Annotations_New <- "Other"
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_double@meta.data$Annotations_New <- "CD8_CD4_Double_Positive"
+
+
+
+
+########################################################################################
+########################################################################################
+######merge the objects:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed<- merge(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd4,y=c(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_cd8, 
+                                                                                                                                                                         ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_other,
+                                                                                                                                                                         ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_double), merge.data = TRUE)
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed[["RNA_PCA"]] <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated[["RNA_PCA"]]
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed[["RNA_UMAP"]] <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated[["RNA_UMAP"]]
+
+jpeg("DIMPLOT_SeuratClusters_And_ManualAnnotations.jpeg",height=8,width=12,units="in",res=600)
+a <- DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             group.by = "seurat_clusters",
+             cols = c25)
+b <-  DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+              reduction  = "RNA_UMAP",
+              split.by="Treatment",
+              group.by = "Annotations_New",
+              cols = c25)
+a / b
+dev.off()
+
+data_ct26_scrnaseq_annotation_manual_SPICA <- data.frame(
+  "pbs_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x251_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x310_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x352_CD4_Tfh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  
+  #"pbs_CD4_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  #"x251_CD4_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  #"x310_CD4_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  #"x352_CD4_Exh"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  
+  "pbs_CD4_Treg"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x251_CD4_Treg"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x310_CD4_Treg"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x352_CD4_Treg"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  
+  "pbs_CD4_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x251_CD4_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x310_CD4_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x352_CD4_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  
+  "pbs_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x251_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x310_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x352_CD8_TEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  
+  "pbs_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x251_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x310_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x352_CD8_CM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  
+  "pbs_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x251_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x310_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x352_CD8_EM"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  
+  "pbs_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x251_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x310_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x352_CD8_TPEX"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  
+  "pbs_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x251_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x310_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x352_CD8_Naive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  
+  #"pbs_CD8_EFF"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TEFF")),
+  #"x251_CD8_EFF"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TEFF")),
+  #"x310_CD8_EFF"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TEFF")),
+  #"x352_CD8_EFF"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_TEFF")),
+  
+  "pbs_Other"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x251_Other"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x310_Other"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x352_Other"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "Other")),
+  
+  "pbs_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "PBS" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CD4_Double_Positive")),
+  "x251_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x251" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CD4_Double_Positive")),
+  "x310_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x310" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CD4_Double_Positive")),
+  "x352_Douple_Positive"=as.numeric(sum(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment == "x352" & ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Annotations_New == "CD8_CD4_Double_Positive"))
+  
+  
+)
+
+write.table(data_ct26_scrnaseq_annotation_manual_SPICA,"ct26_cellcounts_scRNAseq_SPICA__And_Manual_annotation.txt",sep="\t")
+
+df_long_ct26_SPICA_ANNOTATIN_CD4 <- reshape2::melt(data_ct26_scrnaseq_annotation_manual_SPICA, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c("pbs_CD4_Tfh", "x251_CD4_Tfh", "x310_CD4_Tfh", "x352_CD4_Tfh", "pbs_CD4_Treg", "x251_CD4_Treg", "x310_CD4_Treg", "x352_CD4_Treg",
+                       
+                       "pbs_CD4_Naive", "x251_CD4_Naive", "x310_CD4_Naive", "x352_CD4_Naive",
+                       "pbs_Other", "x251_Other", "x310_Other", "x352_Other",
+                       "pbs_Douple_Positive", "x251_Douple_Positive", "x310_Douple_Positive", "x352_Douple_Positive")
+))
+
+df_long_ct26_SPICA_ANNOTATIN_CD8 <- reshape2::melt(data_ct26_scrnaseq_annotation_manual_SPICA, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD8_TEX", "x251_CD8_TEX", "x310_CD8_TEX", "x352_CD8_TEX",
+    "pbs_CD8_CM", "x251_CD8_CM", "x310_CD8_CM", "x352_CD8_CM",
+    "pbs_CD8_EM", "x251_CD8_EM", "x310_CD8_EM", "x352_CD8_EM",
+    "pbs_CD8_TPEX", "x251_CD8_TPEX", "x310_CD8_TPEX", "x352_CD8_TPEX",
+    "pbs_CD8_Naive", "x251_CD8_Naive", "x310_CD8_Naive", "x352_CD8_Naive"
+
+  )
+))
+
+
+jpeg("Absolute_cell_counts_CT26_annotation_SPICA_CD4_manual_confirmed.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_ct26_SPICA_ANNOTATIN_CD4, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 200, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 300, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_CT26_annotation_SPICA_CD8_manual_confirmed.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_ct26_SPICA_ANNOTATIN_CD8, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+saveRDS(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,"ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed_manual_confirmed.rds")
+
+############################################################  
+########## TRBV Focus
+############################################################ 
+#Find the genes with this name
+rownames(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed)[grep("Trbv15", 
+                                                                                                    rownames(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$integrated@scale.data), 
+                                                                                                    ignore.case = T)]
+
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed) <- "RNA"
+jpeg("DIMPLOT_SeuratClusters_And_ManualAnnotations_TRBV13-2&3.jpeg",height=12,width=13,units="in",res=600)
+a = FeaturePlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                #cells = rownames(NSLSC_object_list_rna_integrated_all_annotated@meta.data)[which(NSLSC_object_list_rna_integrated_all_annotated$orig.ident == "Treated")],
+                features = c("Trbv13-2"),
+                blend = F,
+                col=c("grey", "red"),
+                order = T,
+                min.cutoff = "q25",
+                max.cutoff = "q70",
+                split.by = "Treatment",
+                reduction="RNA_UMAP"
+)
+b = FeaturePlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                #cells = rownames(NSLSC_object_list_rna_integrated_all_annotated@meta.data)[which(NSLSC_object_list_rna_integrated_all_annotated$orig.ident == "Treated")],
+                features = c("Trbv13-3"),
+                blend = F,
+                col=c("grey", "red"),
+                order = T,
+                min.cutoff = "q25",
+                max.cutoff = "q70",
+                split.by = "Treatment",
+                reduction="RNA_UMAP"
+)
+c <-  DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+              reduction  = "RNA_UMAP",
+              split.by="Treatment",
+              group.by = "Annotations_New",
+              cols = c25)
+a/b/c
+dev.off()
+
+
+########################################################
+########################################################
+########Making the data table for Allart and Jonathan
+########################Extract  data:
+#EXTRACTING DATA:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb13_3 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",] 
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb13_2 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",] 
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb31 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv31",] 
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb19 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv19",] 
+
+combined_metadata <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data
+#combine (11551 total numebr of cells combined, but onces NAs are removed only 5808 remain)
+combined_metadata_subset<- combined_metadata %>% select("treatment_status", "Treatment","seurat_clusters","TILPRED_TIL","TILPRED_TIL_score","Annotations_New", "Trvb13_3","Trvb13_2","Trvb31","Trvb19")
+colnames(combined_metadata_subset) <- c("Patient_Barcode","Treatment","seurat_clusters","SPICA_Annotation","SPICA_Score","Manual_Annotations", "Trvb13_3","Trvb13_2","Trvb31","Trvb19")
+
+
+write.table(combined_metadata_subset,"CT26_model_Annotation_confirm_datatable_Relabeled_RNA_Slot.csv",sep=",")
+
+
+########################################################
+##############Manual 
+#Now add the TRBV into the 
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb5_13_2 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",]
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Trvb5_13_3 <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",]  
+
+#Make a feature plot using GGPLOT2
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff2 <- scales::rescale(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Trvb5_13_2, to = c(0,1))
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff3 <- scales::rescale(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Trvb5_13_3, to = c(0,1))
+hist(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff2)
+hist(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff3)
+
+jpeg("FEATUREPLOT_TRBV13-2_ONLY_ct26.jpeg",height=5,width=4,units="in",res=600)
+ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+       aes(x = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff2 < 0.1, "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+jpeg("FEATUREPLOT_TRBV13-3_ONLY_ct26.jpeg",height=5,width=4,units="in",res=600)
+ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+       aes(x = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$diff3 < 0.1, "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+
+jpeg("FEATUREPLOT_TRBV13-2_ONLY_cT26_scalebar.jpeg",height=5,width=4,units="in",res=600)
+ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+       aes(x = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, aes(colour=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Trvb5_13_2)) +
+  scale_color_gradientn(colors = c("grey", scales::alpha("grey", 0.7), "gray", "gray", scales::alpha("tomato", 0.5), "red"),
+                        values = c(0,0.05, 0.1,0.25,1)
+  ) +
+  
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+jpeg("FEATUREPLOT_TRBV13-3_ONLY_cT26_scalebar.jpeg",height=5,width=4,units="in",res=600)
+ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+       aes(x = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, aes(colour=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$Trvb5_13_3)) +
+  scale_color_gradientn(colors = c("grey", scales::alpha("grey", 0.7), "gray", "gray", scales::alpha("tomato", 0.5), "red"),
+                        values = c(0,0.05, 0.1,0.25,1)
+  ) +
+  
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+
+########Generating plots for Jonathan and Allart
+########################The density plot that jonathan requested.
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed <- readRDS("ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed_manual_confirmed.rds")
+
+DefaultAssay(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed) <- "RNA"
+
+jpeg("GGridgesplot_TRBV132_CT26_mouse_model.jpeg",height=5,width=8,units="in",res=600)
+a <- ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+            aes(x=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",],
+                y=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment,
+                fill=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.5, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values = c("PBS" = "gray", 
+                               "x251" = "orange",
+                               "x310" = "blue",
+                               "x352" = "green")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-2") + 
+  theme(plot.title = element_text(vjust = 0.8, hjust = 0.9, size = 18)) +
+  xlim(0.2,3)
+
+
+b<- ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+           aes(x=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",],
+               y=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment,
+               fill=ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.4, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values = c("PBS" = "gray", 
+                               "x251" = "orange",
+                               "x310" = "blue",
+                               "x352" = "green")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-3") + 
+  theme(plot.title = element_text(vjust =0.8, hjust = 0.9, size = 18)) +
+  xlim(0.2,3)
+
+a | b
+dev.off()
+
+
+#################################################
+#################################################
+###Jonathan's question regarding the DimPlot generation and doing a heatmap of density
+#This is the RDS object I am working with
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed
+
+
+jpeg("UMAP_withcell_DENSITY_CT26_MODEL.jpeg",height=5,width=12,units="in",res=600)
+UMAP <- DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+               group.by = "Annotations_New",
+               cols=c25)
+
+p1 <- ggplot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data,
+       aes(x = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+           y = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+           )) +
+  geom_point(size = 0.99,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  #geom_density_2d()+
+  #stat_density_2d(aes(fill=..level..,alpha = ..level..),  geom = "density_2d_filled",contour=T)+
+  stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",contour=T)+
+  #scale_fill_viridis_c() +
+  #scale_fill_gradient2(low ="blue", mid="green",high = "red",guide="colourbar",midpoint = 0.01)+
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00,0.1, 0.25, 0.5,0.8,1)) +
+  #scale_fill_gradientn(colors = c(scales::alpha("blue", 0.5), "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+   #                    values = c(0.04, 0.4, 0.55,0.8,1)) +
+  #scale_color_gradientn(colours = rainbow(5)) +
+  facet_wrap(~ ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+UMAP | p1
+dev.off()
+
+
+
+#################################################CT26 MODEL
+#################################################
+##DGE ANALYSIS
+#################################################
+#################################################
+cell_pop <- unique(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Annotations_New)
+Idents(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed) <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Treatment
+
+for(ii in 1:length(cell_pop)){
+  
+  message(paste("Working with", cell_pop[ii]))
+  temp.cells <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                       cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Annotations_New == cell_pop[ii]))
+  DefaultAssay(temp.cells) <- "RNA"
+  
+  # find DEGs
+  message("Finding DEGs for x251 treatment relative to PBS")
+  temp.res_x251 <- tryCatch(FindMarkers(temp.cells, 
+                                    slot = "data",
+                                   min.cells.group = 5,
+                                   ident.1 = "x251", ident.2 = "PBS", 
+                                   logfc.threshold = 0.2, 
+                                   min.pct = 0.2),
+                       error = function(xx){
+                         message(xx)
+                         dummy_df <- data.frame(p_val = rep(NA,2),
+                                                avg_log2FC = rep(NA,2), 
+                                                pct.1 = rep(NA,2),
+                                                pct.2  = rep(NA,2),
+                                                p_val_adj = rep(NA,2))
+                         return(dummy_df)
+                       })
+  all_genes_x251 <- rownames(temp.res_x251)
+  temp.res_x251$x251_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x251"), assay = "RNA", slot = 'data')[all_genes_x251,])))
+  temp.res_x251$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x251,])))
+  temp.res_x251$manual_confirmed_avg_FC <- temp.res_x251$x251_normalized_counts - temp.res_x251$PBS_normalized_counts
+  
+  message("Finding DEGs for x310 treatment relative to PBS")
+  temp.res_x310 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "x310", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  all_genes_x310 <- rownames(temp.res_x310)
+  temp.res_x310$x310_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x310"), assay = "RNA", slot = 'data')[all_genes_x310,])))
+  temp.res_x310$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x310,])))
+  temp.res_x310$manual_confirmed_avg_FC <- temp.res_x310$x310_normalized_counts - temp.res_x310$PBS_normalized_counts
+  
+  message("Finding DEGs for x352 treatment relative to PBS")
+  temp.res_x352 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "x352", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  
+  all_genes_x352 <- rownames(temp.res_x352)
+  temp.res_x352$x352_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x352"), assay = "RNA", slot = 'data')[all_genes_x352,])))
+  temp.res_x352$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x352,])))
+  temp.res_x352$manual_confirmed_avg_FC <- temp.res_x352$x352_normalized_counts - temp.res_x352$PBS_normalized_counts
+  
+  temp.res_x352$Gene <- rownames(temp.res_x352)
+  temp.res_x310$Gene <- rownames(temp.res_x310)
+  temp.res_x251$Gene <- rownames(temp.res_x251)
+
+  if(ii == 1){
+    res_deg_x352 <- list(temp.res_x352)
+    res_deg_x310 <- list(temp.res_x310) 
+    res_deg_x251 <- list(temp.res_x251) 
+    
+    names(res_deg_x352) <- cell_pop[ii]
+    names(res_deg_x310) <- cell_pop[ii]
+    names(res_deg_x251) <- cell_pop[ii]
+  } else {
+    
+    res_deg_x352[[ii]] <- temp.res_x352
+    res_deg_x310[[ii]] <- temp.res_x310
+    res_deg_x251[[ii]] <- temp.res_x251
+    
+    names(res_deg_x352)[[ii]] <- cell_pop[ii]
+    names(res_deg_x310)[[ii]] <- cell_pop[ii]
+    names(res_deg_x251)[[ii]] <- cell_pop[ii]
+    
+  }
+
+  message(paste(" >> Done for", cell_pop[ii]))
+}
+
+
+res_deg_x352 <- rbindlist(res_deg_x352, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+
+res_deg_x310 <- rbindlist(res_deg_x310, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+res_deg_x251 <- rbindlist(res_deg_x251, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+
+write.table(res_deg_x352, "all_res_deg_CT26_x352_vs_PBS_Updated_Gene_Counts.csv", sep=",", quote = F, row.names = F)
+write.table(res_deg_x310, "all_res_deg_CT26_x310_vs_PBS_Updated_Gene_Counts.csv", sep=",", quote = F, row.names = F)
+write.table(res_deg_x251, "all_res_deg_CT26_x251_vs_PBS_Updated_Gene_Counts.csv", sep=",", quote = F, row.names = F)
+
+#################################################
+#################################################
+################################################# ## Addressing Jonathans questions regarding the following:
+#Generate a gene list with normalized readcounts for DEG analysis
+#Generate a density UMAP with the following cell populations highlighted:
+#CD8+ GZMB+ TIM3- PD1+ TCF7low-
+#KLRK1+IL7Ra+ CD8+
+#################################################
+#I need the following RDS objects:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed <- readRDS("ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed_manual_confirmed.rds")
+res_deg_x352
+res_deg_x310
+res_deg_x251
+#################################################
+##########################Try2: This works but the log2 FC values are slightly different than the average expression values. 
+##From this: https://www.biostars.org/p/497269/
+temp.cells <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                     cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Annotations_New == "CD4_Th"))
+DefaultAssay(temp.cells) <- "RNA"
+
+temp.res_x251 <- tryCatch(FindMarkers(temp.cells,
+                                      assay="RNA",
+                                       slot = "data",
+                                      min.cells.group = 5,
+                                      ident.1 = "x251", ident.2 = "PBS", 
+                                      logfc.threshold = 0.2, 
+                                      min.pct = 0.2),
+                          error = function(xx){
+                            message(xx)
+                            dummy_df <- data.frame(p_val = rep(NA,2),
+                                                   avg_log2FC = rep(NA,2), 
+                                                   pct.1 = rep(NA,2),
+                                                   pct.2  = rep(NA,2),
+                                                   p_val_adj = rep(NA,2))
+                            return(dummy_df)
+                          })
+
+#avg_exp_df_counts_raw <- AverageExpression(temp.cells, 
+ #                                          assay="RNA",
+  #                                         slot = "data",
+   #                                        return.seurat = F
+    #                                       )
+
+#temp.res_x251$x251 <- sapply(rownames(temp.res_x251), function(x) avg_exp_df_counts_raw$RNA[x, "x251"])
+#temp.res_x251$pbs <- sapply(rownames(temp.res_x251), function(x) avg_exp_df_counts_raw$RNA[x, "PBS"])
+
+#temp.res_x251$testFC <- log2((temp.res_x251$x251)+1) - log2((temp.res_x251$pbs)+1)
+#write.table(temp.res_x251,"temp.res_x251$x251.csv",sep=",")
+#######Manual confirmation --- This way actually works!
+#####################This is a way to extract the same values that AverageExpression extracts. Still the average_fc doesn't add up. 
+#Get the top genes
+##From this: https://github.com/satijalab/seurat/issues/3879
+all_genes <- rownames(temp.res_x251)
+
+#Extract the read counts and calculate average log2fC. 
+#data_group_1 <- as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x251"), slot = 'counts')[top_genes,]) %>% expm1() %>% rowMeans %>% log()
+temp.res_x251$x251_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x251"), assay = "RNA", slot = 'data')[all_genes,])))
+#data_group_2 <- as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), slot = 'counts')[top_genes,])  %>% expm1() %>% rowMeans() %>% log
+temp.res_x251$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes,])))
+
+temp.res_x251$manual_confirmed_avg_FC <- temp.res_x251$x251_normalized_counts - temp.res_x251$PBS_normalized_counts
+
+
+############################################################################## 
+############################################################################## 
+########################## GENERATING Density UMAPs
+#CD8+ GZMB+ TIM3- PD1+ TCF7low-
+#KLRK1+IL7Ra+ CD8+
+
+median_Gzmb <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Gzmb",]))
+median_Cd8a <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Cd8a",]))
+median_Havcr2 <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Havcr2",]))
+median_Pdcd1 <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Pdcd1",]))
+median_Tcf7 <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Tcf7",]))
+median_Klrk1 <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Klrk1",]))
+median_IL7Ra <- median(as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Il7r",]))
+#Scatter plot to assess correlation between CD8 protein and RNA levels:
+# Scatter plot to assess correlation between CD8 protein and RNA levels:
+jpeg("ScatterPlots_Multiple_ForUMAP_CT26_mouse_model.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Extracting median values
+gzmb <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Gzmb",]),
+                   y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Gzmb, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Gzmb") + ylab("CD8a")
+
+tim3 <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Havcr2",]),
+                   y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Havcr2, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Tim3") + ylab("CD8a")
+
+pd1 <- ggplot(NULL, 
+              aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Pdcd1",]),
+                  y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Pdcd1, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Pdcd1") + ylab("CD8a")
+
+tcf7 <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Tcf7",]),
+                   y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Tcf7, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Tcf7") + ylab("CD8a")
+
+Klrk1 <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Klrk1",]),
+                   y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Klrk1, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Klrk1") + ylab("CD8a")
+
+Il7ra <- ggplot(NULL, 
+                aes(x = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Il7r",]),
+                    y = 1 * as.numeric(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_IL7Ra, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Il7ra") + ylab("CD8a")
+
+(gzmb | tim3 | Klrk1) / (pd1 | tcf7 | Il7ra)
+dev.off()
+
+#Density umap to label CD8+ GZMB+ TIM3- PD1+ TCF7low T cells
+####First label the cells:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$CD8_GZMB_PD1_TIMneg_TCFlow <- 
+        ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD4_CD8_TREG_LABELS =="CD8_Tcells" &
+                 ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Gzmb",] > median_Gzmb &
+                 ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Havcr2",] == 0  &
+                 ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Pdcd1",] > median_Pdcd1 &
+                 ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Tcf7",] < 0.25 ,
+               "Positive",
+               "Negative")
+
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$CD8_Klrk1_Il7ra_TCFlow <- 
+  ifelse(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD4_CD8_TREG_LABELS =="CD8_Tcells" &
+           ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Klrk1",] > median_Klrk1 &
+           ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@counts["Il7r",] > median_IL7Ra,
+         "Positive",
+         "Negative")
+
+#nrow(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data[which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed$CD8_GZMB_PD1_TIMneg_TCFlow=="Positive"),])
+
+positive <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                     cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD8_GZMB_PD1_TIMneg_TCFlow == "Positive"))
+Negative <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                    cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD8_GZMB_PD1_TIMneg_TCFlow == "Negative"))
+
+jpeg("UMAP_withcell_DENSITY_Jonathan_UMAP_CT26_MODEL.jpeg", height = 6, width = 12, units = "in", res = 600)
+# Combine levels of CD8_GZMB_PD1_TIMneg_TCFlow
+UMAP <- DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                group.by = "Annotations_New",
+                cols=c25) +
+  geom_text(x = 10, y = 10, label = "This is the original UMAP", size = 5, color = "black")
+
+p1 <- ggplot(positive@meta.data,
+             aes(x = positive@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = positive@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) +   # Set your custom y-axis coordinates
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) +
+  ggtitle("CD8+ GZMB+ TIM3- PD1+ TCF7 low T cells (858 cells)")
+#Negative cells
+p2 <- ggplot(Negative@meta.data,
+             aes(x = Negative@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = Negative@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  #facet_wrap(~ CD8_GZMB_PD1_TIMneg_TCFlow, scales = "free") + 
+  # Set legend title for negative cells
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20))
+superimposed_plot <- plot_grid(UMAP, p1/ p2, ncol = 2)
+superimposed_plot
+dev.off()
+
+######KLRK1+IL7Ra+ CD8+
+positive_klrk1_il7ra <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                   cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD8_Klrk1_Il7ra_TCFlow == "Positive"))
+Negative_klrk1_il7ra <- subset(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                   cells=which(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$CD8_Klrk1_Il7ra_TCFlow == "Negative"))
+
+jpeg("UMAP_withcell_DENSITY_Jonathan_UMAP_KLRK1_IL7RA_CT26_MODEL.jpeg", height = 6, width = 12, units = "in", res = 600)
+# Combine levels of CD8_GZMB_PD1_TIMneg_TCFlow
+UMAP <- DimPlot(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                group.by = "Annotations_New",
+                cols=c25)
+p1 <- ggplot(positive_klrk1_il7ra@meta.data,
+             aes(x = positive_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = positive_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) +   # Set your custom y-axis coordinates
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) +
+  ggtitle("KLRK1+ IL7Ra+ CD8+T cells (1973 cells)")
+#Negative cells
+p2 <- ggplot(Negative_klrk1_il7ra@meta.data,
+             aes(x = Negative_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = Negative_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  #facet_wrap(~ CD8_GZMB_PD1_TIMneg_TCFlow, scales = "free") + 
+  # Set legend title for negative cells
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) 
+
+superimposed_plot <- plot_grid(UMAP, p1/ p2, ncol = 2)
+superimposed_plot
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#################################################MC38 mouse model:
+
+pbs_dir<-"/home/hhassan/murine_dataset/mc38/PBS-none_GEX_results_GEX"
+x251_dir<-"/home/hhassan/murine_dataset/mc38/x251-0-2-0-2mg-ml_GEX_results_GEX"
+x310_dir<-"/home/hhassan/murine_dataset/mc38/x310-1-1mg-ml_GEX_results_GEX"
+x310_3_dir <- "/home/hhassan/murine_dataset/mc38/x310-3-3mg-ml_GEX_results_GEX"
+x352_dir<-"/home/hhassan/murine_dataset/mc38/x352-1-1mg-ml_GEX_results_GEX"
+
+pbs_mc38  <- Read10X(data.dir = pbs_dir)
+x251_mc38 <- Read10X(data.dir = x251_dir)
+x310_mc38 <- Read10X(data.dir = x310_dir)
+x310_3_mc38 <- Read10X(data.dir = x310_3_dir)
+x352_mc38 <- Read10X(data.dir = x352_dir)
+
+pbs_mc38_data <- CreateSeuratObject(counts = pbs_mc38)
+x251_mc38_data <- CreateSeuratObject(counts = x251_mc38)
+x310_mc38_data <- CreateSeuratObject(counts = x310_mc38)
+x310_3_mc38_data <- CreateSeuratObject(counts = x310_3_mc38)
+x352_mc38_data <- CreateSeuratObject(counts = x352_mc38)
+
+#Add treatment barcodes to the metadata:
+pbs_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(pbs_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_PBS", pbs_mc38_data@meta.data$treatment_status)
+x251_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x251_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x251", x251_mc38_data@meta.data$treatment_status)
+x310_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x310_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x310", x310_mc38_data@meta.data$treatment_status)
+x310_3_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x310_3_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x310_3", x310_3_mc38_data@meta.data$treatment_status)
+x352_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x352_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x352", x352_mc38_data@meta.data$treatment_status)
+
+
+
+#Add mitochondrial and ribosomal reads into the  metadata and then apply filter
+pbs_mc38_data[["percent.mt"]] <- PercentageFeatureSet(pbs_mc38_data, pattern = "^mt-", assay = "RNA")
+pbs_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(pbs_mc38_data, pattern = "Rn45s", assay = "RNA")
+
+x251_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x251_mc38_data, pattern = "^mt-", assay = "RNA")
+x251_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x251_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x310_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x310_mc38_data, pattern = "^mt-", assay = "RNA")
+x310_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x310_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x310_3_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x310_3_mc38_data, pattern = "^mt-", assay = "RNA")
+x310_3_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x310_3_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x352_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x352_mc38_data, pattern = "^mt-", assay = "RNA")
+x352_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x352_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+pbs_mc38_data_2 <- subset(pbs_mc38_data, cells = colnames(pbs_mc38_data)[which(pbs_mc38_data@meta.data$nFeature_RNA > 200 & pbs_mc38_data@meta.data$nFeature_RNA < 4000 & pbs_mc38_data@meta.data$percent.mt < 10)])
+x251_mc38_data_2 <- subset(x251_mc38_data, cells = colnames(x251_mc38_data)[which(x251_mc38_data@meta.data$nFeature_RNA > 200 & x251_mc38_data@meta.data$nFeature_RNA < 4000 & x251_mc38_data@meta.data$percent.mt < 10)])
+x310_mc38_data_2 <- subset(x310_mc38_data, cells = colnames(x310_mc38_data)[which(x310_mc38_data@meta.data$nFeature_RNA > 200 & x310_mc38_data@meta.data$nFeature_RNA < 4000 & x310_mc38_data@meta.data$percent.mt < 10)])
+x310_3_mc38_data_2 <- subset(x310_3_mc38_data, cells = colnames(x310_3_mc38_data)[which(x310_3_mc38_data@meta.data$nFeature_RNA > 200 & x310_3_mc38_data@meta.data$nFeature_RNA < 4000 & x310_3_mc38_data@meta.data$percent.mt < 10)])
+x352_mc38_data_2 <- subset(x352_mc38_data, cells = colnames(x352_mc38_data)[which(x352_mc38_data@meta.data$nFeature_RNA > 200 & x352_mc38_data@meta.data$nFeature_RNA < 5000 & x352_mc38_data@meta.data$percent.mt < 10)])
+
+################################## ------- VISUALIZING QC:
+#Generate a dataframe with the number of cells remaining. 
+data_mc38_scrnaseq <- data.frame("pbs_mc38_before"=as.numeric(pbs_mc38_data@meta.data %>% nrow()),
+                                 "pbs_mc38_after"=as.numeric(pbs_mc38_data_2@meta.data %>% nrow()),
+                                 "x251_mc38_before"=as.numeric(x251_mc38_data@meta.data %>% nrow()),
+                                 "x251_mc38_after"=as.numeric(x251_mc38_data_2@meta.data %>% nrow()),
+                                 "x310_mc38_before"=as.numeric(x310_mc38_data@meta.data %>% nrow()),
+                                 "x310_mc38_after"=as.numeric(x310_mc38_data_2@meta.data %>% nrow()),
+                                 "x310_3_mc38_before"=as.numeric(x310_3_mc38_data@meta.data %>% nrow()),
+                                 "x310_3_mc38_after"=as.numeric(x310_3_mc38_data_2@meta.data %>% nrow()),
+                                 "x352_mc38_before"=as.numeric(x352_mc38_data@meta.data %>% nrow()),
+                                 "x352_mc38_after"=as.numeric(x352_mc38_data_2@meta.data %>% nrow())
+)
+
+write.table(data_mc38_scrnaseq,"mc38_cellcounts_scRNAseq_filtering.txt",sep="\t")
+
+df_long_mc38 <- reshape2::melt(data_mc38_scrnaseq, id.vars = NULL, measure.vars = c( 
+  "pbs_mc38_before", "pbs_mc38_after",
+  "x251_mc38_before", "x251_mc38_after",
+  "x310_mc38_before", "x310_mc38_after",
+  "x310_3_mc38_before", "x310_3_mc38_after",
+  "x352_mc38_before", "x352_mc38_after"
+))
+
+jpeg("Absolute_cell_counts_before_after_filtering_mc38_10percentcutoff.jpeg",height=4,width=8,units="in",res=600)
+ggplot(df_long_mc38, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "QC Filters") +
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 3000, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 5000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+#VlnPlot QC------------------------------------:
+jpeg("qc_ncountRNA_individual_objects_mito_before.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red") 
+b=VlnPlot(x251_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+c=VlnPlot(x310_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+d=VlnPlot(x310_3_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+e=VlnPlot(x352_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+a | b | c |d |e
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_nfeature_before.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x251_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x310_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x310_3_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x352_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_mito_after_10perc.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x251_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x310_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x310_3_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x352_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_nfeature_after.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x251_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x310_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x310_3_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x352_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e
+dev.off()
+
+
+####################################################################################
+##############Integration of the scRNAseq dataset:
+mc38_object_list<- c(pbs_mc38_data_2,
+                     x251_mc38_data_2,
+                     x310_mc38_data_2,
+                     x310_3_mc38_data_2,
+                     x352_mc38_data_2
+)
+
+#Perform sctransform on each object. But first confirm the default assay for each.
+for (i in 1:length(mc38_object_list)) {
+  print(DefaultAssay(mc38_object_list[[i]]))
+}
+#for (i in 1:length(object_list_rna)) {
+# DefaultAssay(object_list_rna[[i]]) <- "SCT"
+#}
+for (i in 1:length(mc38_object_list)) {
+  mc38_object_list[[i]] <- SCTransform(mc38_object_list[[i]], vars.to.regress = "percent.mt", variable.features.n = 15000, verbose = TRUE)
+}
+
+#Access a specific object within the list of seurat objects:
+mc38_object_list[[3]]@assays$SCT
+
+#Now integrate the datasets.
+mc38_object_list_features <- SelectIntegrationFeatures(object.list = mc38_object_list, nfeatures = 15000)
+mc38_object_list <- PrepSCTIntegration(object.list = mc38_object_list, anchor.features = mc38_object_list_features, 
+                                       verbose = TRUE)
+#saveRDS(crc_object_list_rna,"crc_object_list_rna_preintegration_WITHOUTPT10.rds")
+#saveRDS(crc_object_list_rna.anchors2,"crc_anchors_usingreference.rds")
+mc38_object_list.anchors <- FindIntegrationAnchors(object.list = mc38_object_list, normalization.method = "SCT", 
+                                                   anchor.features = mc38_object_list_features, verbose = TRUE)
+mc38_object_list_rna_integrated <- IntegrateData(anchorset = mc38_object_list.anchors, normalization.method = "SCT", 
+                                                 verbose = TRUE)
+
+#Now add the reductions and DON'T SCALE!
+DefaultAssay(mc38_object_list_rna_integrated)
+
+#Add treatment
+mc38_object_list_rna_integrated@meta.data$Treatment <- sub(".+_", "", mc38_object_list_rna_integrated@meta.data$treatment_status)
+
+#SAVE RDS OBJECT:
+saveRDS(mc38_object_list_rna_integrated,"mc38_object_list_rna_integrated_unclustered.rds")
+
+####################################################RESOLUTIONS
+mc38_object_list_rna_integrated <- mc38_object_list_rna_integrated %>% 
+  RunPCA(verbose = T,reduction.name = 'RNA_PCA',reduction.key='RNA_PCA_') %>% 
+  RunUMAP(reduction = "RNA_PCA", dims = 1:30, reduction.name = 'RNA_UMAP', reduction.key='RNA_UMAP_') %>%
+  FindNeighbors(reduction = "RNA_PCA", dims = 1:30) %>%
+  FindClusters(resolution = 0.05) %>%
+  FindClusters(resolution = 0.125) %>%
+  FindClusters(resolution = 0.2) %>%
+  FindClusters(resolution = 0.3) %>%
+  FindClusters(resolution = 0.4) %>%
+  FindClusters(resolution = 0.5) %>%
+  FindClusters(resolution = 0.6) %>%
+  FindClusters(resolution = 0.7) %>%
+  FindClusters(resolution = 0.8) %>%
+  FindClusters(resolution = 0.9) %>%
+  FindClusters(resolution = 1.0) %>%
+  FindClusters(resolution = 1.2)
+
+#Visualize the UMAP
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.6",
+             cols = c25)
+
+jpeg("Dimplot_all_IntegratedObject_res0.3_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.3",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.5_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.5",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.4_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.3_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+####################################################RESOLUTIONS
+####################################################
+####################################################
+#########FEATURE PLOTS
+####################################################
+####################################################
+mc38_object_list_rna_integrated <- FindClusters(object = mc38_object_list_rna_integrated, resolution = 0.4)
+
+jpeg("FeaturePlot_CD8&CD4_RNAdefault.jpeg",height=8,width=14,units="in",res=600)
+cd8 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = "integrated_Cd8a",
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd8 / cd4
+dev.off()
+
+#CD4 and FOXP3
+jpeg("FeaturePlot_CD4&FOXP3_RNAdefault.jpeg",height=8,width=14,units="in",res=600)
+foxp3 <- FeaturePlot(mc38_object_list_rna_integrated,
+                     reduction  = "RNA_UMAP",
+                     features = "integrated_Foxp3",
+                     min.cutoff = "q25",
+                     max.cutoff = "q95",
+                     split.by="Treatment",
+                     order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment", order=T)
+cd4 / foxp3
+
+dev.off()
+
+#VlnPlot RNA default
+jpeg("violinplot_CD8_CD4_RNADefault.jpeg",height=4,width=12,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,features=c("integrated_Cd8a","integrated_Cd4"),stack=TRUE,flip=TRUE,pt.size = 0)
+dev.off()
+jpeg("violinplot_foxp3_rna_RNAdefault.jpeg",height=4,width=6,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,features=c("integrated_Foxp3"),stack=FALSE,flip=TRUE,pt.size = 0)
+dev.off()
+
+#VlnPlot QC------------------------------------:
+mc38_object_list_rna_integrated_unclustered<-readRDS("mc38_object_list_rna_integrated_unclustered.rds")
+jpeg("qc_ncountRNA.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("nCount_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_nfeature.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_percentmito.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+
+
+jpeg("qc_smoothscatter-nsclc.jpeg",height=4,width=6,units="in",res=600)
+par(mfrow=c(1,2), bty="n")
+smoothScatter(log10(mc38_object_list_rna_integrated_unclustered$nCount_RNA), log10(mc38_object_list_rna_integrated_unclustered$nFeature_RNA), 
+              xlab="log10(Library sizes)", ylab="log10(# of expressed genes)", 
+              nrpoints=500, cex=0.5) #Graph of ncount RNA vs nFeature RNA 
+smoothScatter(mc38_object_list_rna_integrated_unclustered$percent.ribo, mc38_object_list_rna_integrated_unclustered$percent.mt,ylim=c(0,100), xlim=c(0,100),xlab="Ribosome prop. (%)", ylab="Mitochondrial prop. (%)",nrpoints=500, cex=0.5) #Graph of percent mito and percent ribo in your features
+abline(h=5,  lty=1)
+abline(v=10, lty=1)
+dev.off()
+
+#Save the clustered dataset:
+saveRDS(mc38_object_list_rna_integrated,"mc38_object_list_rna_integrated_clustered.rds")
+
+
+################################ labeling clusters:
+mc38_object_list_rna_integrated <- readRDS("mc38_object_list_rna_integrated_clustered.rds")
+new_labels<-c("CD8_Tcells", #0
+              "CD4_Tcells", #1
+              "CD8_Tcells", #2
+              "CD8_Tcells", #3
+              "CD4_Tcells",          #4
+              "CD8_Tcells",          #5
+              "CD8_Tcells", #6
+              "CD4_Tcells", #7
+              "CD4_Tcells",          #8
+              "CD4_Tcells", #9
+              "Other", #10
+              "CD8_Tcells",         #11
+              "CD4_Tcells", #12
+              "Other"          #13
+)
+
+#relable clusters:
+names(new_labels)<- levels(mc38_object_list_rna_integrated)
+mc38_object_list_rna_integrated <- RenameIdents(object = mc38_object_list_rna_integrated, new_labels)
+
+#Now adding the updated labels to metadata
+mc38_object_list_rna_integrated@meta.data$CD4_CD8_TREG_LABELS <- mc38_object_list_rna_integrated@active.ident
+
+levels(mc38_object_list_rna_integrated)
+
+#Plotting the DimPlot
+jpeg("Dimplot_all_IntegratedObject_res0.6_CD4_CD8_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+####################################################################################automatic annotation of celltypes
+####################---ProjectTil---####################
+##########NOW Running PROJECTILS----####################
+library(AUCell)
+library(SingleCellExperiment)
+library(TILPRED)
+library(ProjecTILs)
+library(celldex)
+library(SingleR)
+
+score_cd <- function(object) {
+  vector <- object@meta.data$TILPRED_TIL %>% unique()
+  scores <- vector("numeric",length=length(vector))
+  dataframe <- object@meta.data
+  for (i in seq_along(vector)) {
+    data <- dataframe[which(dataframe$TILPRED_TIL == as.character(vector[[i]])),]
+    scores[i] <-as.numeric(mean(data$TILPRED_TIL_score))
+  }
+  df <- data.frame(labels = vector, confidence_score = scores)
+  return(df)
+}
+
+#RDS OBJECT:
+mc38_object_list_rna_integrated 
+
+
+
+#Now Subset by CD8, CD4 and others:
+mc38_object_list_rna_integrated_CD4 <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="CD4_Tcells")
+mc38_object_list_rna_integrated_CD8 <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="CD8_Tcells")
+mc38_object_list_rna_integrated_other <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="Other")
+
+
+ref_cd4 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD4T_human_ref_v1.rds")
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD8T_human_ref_v1.rds")
+refCols <- c("#edbe2a", "#A58AFF", "#53B400", "#F8766D", "#00B6EB", "#d1cfcc", "#FF0000", "#87f6a5", "#e812dd")
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3")
+
+#Load the required datatables:
+cell.cycle.obj <- ProjecTILs::cell.cycle.obj
+Hs2Mm.convert.table <- ProjecTILs::Hs2Mm.convert.table
+
+#################Labeling CD4 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD4) <- "RNA"
+query.projected.cd4 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD4, ref=ref_cd4, filter.cells = F) #This reduces the number of cells down to 12999. So you cannot merge the datasets!
+#query.projected.cd4 <- ProjecTILs::Run.ProjecTILs(NSLSC_object_list_rna_integrated_all, ref=ref_cd4)
+#Plot the projections:
+#ProjecTILs::plot.projection(ref_cd4, query.projected.cd4, linesize = 0.5, pointsize = 0.5)
+query.projected.cd4 <- ProjecTILs::cellstate.predict(ref=ref_cd4, query=query.projected.cd4)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL<- query.projected.cd4@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL_score <- query.projected.cd4@meta.data$functional.cluster.conf
+
+
+#################Labeling CD8 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD8) <- "RNA"
+query.projected.cd8 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD8, ref=ref_cd8, filter.cells = F) 
+#Plot the projections:
+query.projected.cd8 <- ProjecTILs::cellstate.predict(ref=ref_cd8, query=query.projected.cd8)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL<- query.projected.cd8@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL_score <- query.projected.cd8@meta.data$functional.cluster.conf
+
+
+#################Labeling others -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_other) <- "RNA"
+mc38_object_list_rna_integrated_other@meta.data$TILPRED_TIL <- as.character("NA")
+mc38_object_list_rna_integrated_other@meta.data$TILPRED_TIL_score <- as.numeric(0)
+
+
+#Now Merge the objects back:
+mc38_object_list_rna_integrated_annotated<- merge(mc38_object_list_rna_integrated_CD4,y=c(mc38_object_list_rna_integrated_CD8, mc38_object_list_rna_integrated_other), merge.data = TRUE)
+mc38_object_list_rna_integrated_annotated[["RNA_PCA"]] <- mc38_object_list_rna_integrated[["RNA_PCA"]]
+mc38_object_list_rna_integrated_annotated[["RNA_UMAP"]] <- mc38_object_list_rna_integrated[["RNA_UMAP"]]
+
+
+#Generate a dataframe with the scores and then plot them using ggplot2
+score_cd(mc38_object_list_rna_integrated_annotated)
+
+#Count cells:
+cell_cluster_number<- cell_cluster_count(mc38_object_list_rna_integrated_annotated)
+
+#UMAP of annotated cells
+jpeg("Dimplot_annotated_UMAP_SPICA.jpeg",height=4,width=5,units="in",res=600)
+rna <- DimPlot(mc38_object_list_rna_integrated_annotated,reduction="RNA_UMAP",group.by = "TILPRED_TIL",cols =c25)
+rna
+dev.off()
+
+# Create the bar plot
+jpeg("Cell_count_annotated_cluster_SPICA.jpeg",height=6,width=10,units="in",res=600)
+plot <- ggplot(cell_cluster_number, aes(x = labels, y = confidence_score, fill = labels)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Cell Count by Annotation", x = "Annotation", y = "Absolute Cell Count") +
+  geom_hline(yintercept = 200, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot
+dev.off()
+####################---ProjectTil---####################
+saveRDS(mc38_object_list_rna_integrated_annotated,"mc38_object_list_rna_integrated_annotated.rds")
+
+
+jpeg("UMAP_ANNOTATED_SPICA.jpeg",height=4,width=12,units="in",res=600)
+rna<-DimPlot(mc38_object_list_rna_integrated_annotated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             group.by= "TILPRED_TIL",
+             cols = c25)
+rna 
+dev.off()
+
+data_mc38_scrnaseq_annotation <- data.frame("pbs_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x251_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x310_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x310_3_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            "x352_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Tfh")),
+                                            
+                                            "pbs_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x251_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x310_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x310_3_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            "x352_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_Exh")),
+                                            
+                                            
+                                            "pbs_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Treg")),
+                                            "x251_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Treg")),
+                                            "x310_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Treg")),
+                                            "x310_3_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Treg")),
+                                            "x352_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Treg")),
+                                            
+                                            "pbs_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x251_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x310_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x310_3_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            "x352_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.NaiveLike")),
+                                            
+                                            "pbs_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x251_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x310_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x310_3_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            "x352_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.Th17")),
+                                            
+                                            "pbs_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x251_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x310_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x310_3_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            "x352_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                            
+                                            "pbs_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x251_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x310_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x310_3_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            "x352_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                            
+                                            "pbs_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x251_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x310_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x310_3_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            "x352_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEX")),
+                                            
+                                            "pbs_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x251_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x310_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x310_3_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.CM")),
+                                            "x352_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.CM")),
+                                            
+                                            "pbs_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x251_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x310_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x310_3_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.EM")),
+                                            "x352_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.EM")),
+                                            
+                                            "pbs_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x251_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x310_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x310_3_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            "x352_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TPEX")),
+                                            
+                                            "pbs_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x251_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x310_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x310_3_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            "x352_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.NaiveLike")),
+                                            
+                                            "pbs_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x251_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x310_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x310_3_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            "x352_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "CD8.TEMRA")),
+                                            
+                                            "pbs_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "NA")),
+                                            "x251_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "NA")),
+                                            "x310_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "NA")),
+                                            "x310_3_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "NA")),
+                                            "x352_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated$TILPRED_TIL == "NA"))
+                                            
+)
+
+write.table(data_mc38_scrnaseq_annotation,"mc38_cellcounts_scRNAseq_SPICA_annotation.txt",sep="\t")
+
+
+df_long_mc3_SPICA_ANNOTATIN_CD4 <- reshape2::melt(data_mc38_scrnaseq_annotation, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD4_Tfh", "x251_CD4_Tfh", "x310_CD4_Tfh", "x310_3_CD4_Tfh", "x352_CD4_Tfh", "pbs_CD4_Treg", "x251_CD4_Treg", "x310_CD4_Treg", "x310_3_CD4_Treg", "x352_CD4_Treg",
+    "pbs_CD4_CTL_Exh", "x251_CD4_CTL_Exh", "x310_CD4_CTL_Exh", "x310_3_CD4_CTL_Exh", "x352_CD4_CTL_Exh", 
+    "pbs_CD4_CTL_Naive", "x251_CD4_CTL_Naive", "x310_CD4_CTL_Naive", "x310_3_CD4_CTL_Naive", "x352_CD4_CTL_Naive", 
+    "pbs_CD4_Th17", "x251_CD4_Th17", "x310_CD4_Th17", "x310_3_CD4_Th17", "x352_CD4_Th17", 
+    "pbs_CD4_EOMES", "x251_CD4_EOMES", "x310_CD4_EOMES", "x310_3_CD4_EOMES", "x352_CD4_EOMES", 
+    "pbs_CD4_GNLY", "x251_CD4_GNLY", "x310_CD4_GNLY", "x310_3_CD4_GNLY", "x352_CD4_GNLY","pbs_NA", "x251_NA", "x310_NA", "x310_3_NA", "x352_NA"
+  )
+))
+
+df_long_mc38_SPICA_ANNOTATIN_CD8 <- reshape2::melt(data_mc38_scrnaseq_annotation, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD8_TEX", "x251_CD8_TEX", "x310_CD8_TEX", "x310_3_CD8_TEX", "x352_CD8_TEX", 
+    "pbs_CD8_CM", "x251_CD8_CM", "x310_CD8_CM", "x310_3_CD8_CM", "x352_CD8_CM", 
+    "pbs_CD8_EM", "x251_CD8_EM", "x310_CD8_EM", "x310_3_CD8_EM", "x352_CD8_EM", 
+    "pbs_CD8_TPEX", "x251_CD8_TPEX", "x310_CD8_TPEX", "x310_3_CD8_TPEX", "x352_CD8_TPEX", 
+    "pbs_CD8_Naive", "x251_CD8_Naive", "x310_CD8_Naive", "x310_3_CD8_Naive", "x352_CD8_Naive", 
+    "pbs_CD8_TEMRA", "x251_CD8_TEMRA", "x310_CD8_TEMRA", "x310_3_CD8_TEMRA", "x352_CD8_TEMRA"
+  )
+))
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD4.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc3_SPICA_ANNOTATIN_CD4, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 100, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 150, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD8.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc38_SPICA_ANNOTATIN_CD8, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+###################################################
+###################################################
+#################Manual Annotation
+###################################################
+###################################################
+
+###This is the RDS object:
+mc38_object_list_rna_integrated_annotated <- readRDS("mc38_object_list_rna_integrated_annotated.rds")
+mc38_object_list_rna_integrated_annotated_cd4 <- subset(mc38_object_list_rna_integrated_annotated,subset=CD4_CD8_TREG_LABELS=="CD4_Tcells")
+mc38_object_list_rna_integrated_annotated_cd8 <- subset(mc38_object_list_rna_integrated_annotated,subset=CD4_CD8_TREG_LABELS=="CD8_Tcells")
+mc38_object_list_rna_integrated_annotated_other <- subset(mc38_object_list_rna_integrated_annotated,subset=CD4_CD8_TREG_LABELS=="Other")
+
+#################################################
+#################################################
+###Function:
+sum_values_by_key_auto <- function(data, key_column, value_column) {
+  result <- data %>%
+    group_by(across({{ key_column }})) %>%
+    summarise(Sum = mean({{ value_column }}))
+  return(result)
+}
+
+##### Gene markers:::----------------
+project_tils_markers <- c("integrated_Cd4","integrated_Cd8a","integrated_Ccr7","integrated_TCF7","integrated_PDCD1","integrated_HAVCR2","integrated_TOX","integrated_IZUMO1R","integrated_CXCR6","integrated_XCL1","integrated_GZMB","integrated_GZMK","integrated_IFNG","integrated_FOXP3")
+#IL7R is cd127; PECAM is CD31; 
+#Naive mine: PECAM is CD31,  IL7RA is CD127; CD122 is IL2RB; sell1 is CD62; naive are high for CCR7;SELL is CD62L, 
+genes_memory_naive_revisited<-c("integrated_Cd28","integrated_Cd27","integrated_Il7r","integrated_CcR7","integrated_Sell","integrated_Il2rb","integrated_Tcf7")
+#May have overlapping signatures based on just exhausted.
+genes_precursor_exhausted <- c("integrated_Pdcd1","integrated_Cxcr5","integrated_Lag3","integrated_Gzmb","integrated_Cd244")
+#HAVCR2 is TIM3; CD244 is 2B4; CD160 a marker of highly exhausted CD8+ T cells. TPEX are PDCD1+,CXCR5+,TCF1+,LAG3+,TIM3-,2B4-,GZMB-. Transcript,ional regulator of Tcell exhaustion (TOX)
+genes_exhausted<- c("integrated_Pdcd1","integrated_Lag3","integrated_Havcr2","integrated_Cd160","integrated_Ctla4","integrated_Btla4")
+#Distinguish EM vs EFF based on signatures
+##CD25 is IL2RA; CD127 is IL7RA; TEM are CD25/IL2RA-, CD127/IL7RA+, CD45RO+/CD45RA-; EFF are CD25/IL2RA+, CD45RA+, CD127/IL7RA-. According to another, TEM are suppose to be CD127-/IL7R-
+genes_effector_mine <- c("integrated_Il2ra","integrated_Gzmk","integrated_Ccr7","integrated_Gzma","integrated_Prf1","integrated_Ifng","integrated_Lamp1")
+#Just two for Tregs
+genes_treg <- c("integrated_Foxp3")
+
+
+##### Gene markers:::SEB:::----------------
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3","Cd160")
+genes2check <- c("Cd8a", "Cd8b1", "Gzmk", "Gzmb", "Cd69", "Ccr7", "Sell",  "Ifng","Cd4", "Itgae","Cx3cr1", "Ctla4", "Lag3", "Pdcd1", "Cxcr6",  "Cd14","Btla")
+
+########CELL POPULATIONS FROM SEB:
+##CD4_treg, 
+#CD4_CM	
+#CD4_Effector	
+#CD4_Effector_Memory	
+#CD4_Precursor_Exhausted	
+#CD4_T_helper	
+#CD4_Treg	
+#CD8_Effector	
+#CD8_Exhauted	
+#CD8_Effector_Memory	
+#CD8_Exhausted	
+#CD8_Memory_Exhausted	
+#CD8_Naive_CM	
+#CD8_Precursor_Exhausted
+#Other
+
+
+------------------------------------------------------------------------------
+  #Now annotating CD4 T cells---------------------------------------
+------------------------------------------------------------------------------
+  
+  #1: Treg. 
+  #4: Tfh. High SPICA score
+  #12: Th17 Because of high SPICA score.  #Jonathan and Allart recommended this be called other
+  #7: Exhausted
+  #8: EM, because of high spica score. High in gzma, ifng, IL2RA, GZMK # Jonathan recommended this be relabeled to "CTL"
+  #9: Naive. High SPICA score. High in SELL, TCF7, IL7R, CD27, CD28.
+  
+  
+  cluster_4 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "4"),])
+cluster_4_keyresult <- sum_values_by_key_auto(cluster_4,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_8 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "8"),])
+cluster_8_keyresult <- sum_values_by_key_auto(cluster_8,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_7 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "7"),])
+cluster_7_keyresult <- sum_values_by_key_auto(cluster_7,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_9 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "9"),])
+cluster_9_keyresult <- sum_values_by_key_auto(cluster_9,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_12 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "12"),])
+cluster_12_keyresult <- sum_values_by_key_auto(cluster_12,TILPRED_TIL,TILPRED_TIL_score)
+
+##Now Attaching labels
+mc38_object_list_rna_integrated_annotated_cd4@meta.data$Annotations_New <- ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "1", "CD4_Treg",
+                                                                                  ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "4", "CD4_Th",
+                                                                                         ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "12","Other",
+                                                                                                ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "7","CD4_Exhausted",
+                                                                                                       ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "8","CD4_CTL",
+                                                                                                              "CD4_Naive")))))
+
+
+
+DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="TILPRED_TIL",cols=c25)
+DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="seurat_clusters",cols=c25)
+DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="Annotations_New",cols=c25)
+
+jpeg("Vlnplot_cd4_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+e= VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_treg,stack=FALSE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d|e
+dev.off()
+
+
+
+------------------------------------------------------------------------------
+  #Now annotating CD8 T cells---------------------------------------
+------------------------------------------------------------------------------
+  #0: EM. High SPICA score. #Relabel to CM
+  #11: TPEX. High SPICA score. 
+  #2: EFF. High SPICA score #Relable to "EM"
+  #3: Naive like. High SPICA score. high in cd28, cd27, sell. il7r. 
+  #5: Exhausted. High SPICA score and high for PDCD1, CTLA4, LAG3, tim3.
+  #6: CM. High SPICA score. #relabeled to TPEX
+  
+  
+  cluster_5 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "5"),])
+cluster_5_keyresult <- sum_values_by_key_auto(cluster_5,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_0 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "0"),])
+cluster_0_keyresult <- sum_values_by_key_auto(cluster_0,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_11 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "11"),])
+cluster_11_keyresult <- sum_values_by_key_auto(cluster_11,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_2 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "2"),])
+cluster_2_keyresult <- sum_values_by_key_auto(cluster_2,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_3 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "3"),])
+cluster_3_keyresult <- sum_values_by_key_auto(cluster_3,TILPRED_TIL,TILPRED_TIL_score)
+
+cluster_6 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "6"),])
+cluster_6_keyresult <- sum_values_by_key_auto(cluster_6,TILPRED_TIL,TILPRED_TIL_score)
+
+####Annotate clusters:
+mc38_object_list_rna_integrated_annotated_cd8@meta.data$Annotations_New <- ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "0", "CD8_CM",
+                                                                                  ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "11" |
+                                                                                           mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "6", "CD8_TPEX",
+                                                                                         ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "3","CD8_Naive",
+                                                                                                ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "5", "CD8_Exhausted",
+                                                                                                       #ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "6", "CD8_TPEX",
+                                                                                                              "CD8_EM"))))
+DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="TILPRED_TIL",cols=c25)
+DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="seurat_clusters",cols=c25)
+DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="Annotations_New",cols=c25)
+
+jpeg("Vlnplot_cd8_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d
+dev.off()
+
+------------------------------------------------------------------------------
+  #Now annotating Other T cells---------------------------------------
+------------------------------------------------------------------------------
+  ####Other:
+  mc38_object_list_rna_integrated_annotated_other@meta.data$Annotations_New <- "Other"
+
+
+
+
+
+########################################################################################
+########################################################################################
+######merge the objects:
+mc38_object_list_rna_integrated_annotated_manual_confirmed<- merge(mc38_object_list_rna_integrated_annotated_cd4,y=c(mc38_object_list_rna_integrated_annotated_cd8, mc38_object_list_rna_integrated_annotated_other), merge.data = TRUE)
+mc38_object_list_rna_integrated_annotated_manual_confirmed[["RNA_PCA"]] <- mc38_object_list_rna_integrated_annotated[["RNA_PCA"]]
+mc38_object_list_rna_integrated_annotated_manual_confirmed[["RNA_UMAP"]] <- mc38_object_list_rna_integrated_annotated[["RNA_UMAP"]]
+
+#UMAP
+jpeg("DIMPLOT_SeuratClusters_And_ManualAnnotations.jpeg",height=8,width=12,units="in",res=600)
+a <- DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             group.by = "seurat_clusters",
+             cols = c25)
+b <-  DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+              reduction  = "RNA_UMAP",
+              split.by="Treatment",
+              group.by = "Annotations_New",
+              cols = c25)
+a / b
+dev.off()
+
+
+data_mc38_scrnaseq_annotation_manual <- data.frame(
+  "pbs_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x251_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x310_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x310_3_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  "x352_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th")),
+  
+  "pbs_CD4_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  "x251_CD4_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  "x310_CD4_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  "x310_3_CD4_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  "x352_CD4_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Exhausted")),
+  
+  
+  "pbs_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x251_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x310_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x310_3_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  "x352_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Treg")),
+  
+  "pbs_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x251_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x310_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x310_3_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  "x352_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Naive")),
+  
+  #"pbs_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th17")),
+  #"x251_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th17")),
+  #"x310_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th17")),
+  #"x310_3_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th17")),
+  #"x352_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_Th17")),
+  
+  "pbs_CD4_CTL"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_CTL")),
+  "x251_CD4_CTL"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_CTL")),
+  "x310_CD4_CTL"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_CTL")),
+  "x310_3_CD4_CTL"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_CTL")),
+  "x352_CD4_CTL"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD4_CTL")),
+  
+  "pbs_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x251_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x310_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x310_3_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  "x352_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Exhausted")),
+  
+  "pbs_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x251_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x310_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x310_3_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  "x352_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_CM")),
+  
+  "pbs_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x251_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x310_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x310_3_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  "x352_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EM")),
+  
+  "pbs_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x251_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x310_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x310_3_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  "x352_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_TPEX")),
+  
+  "pbs_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x251_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x310_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x310_3_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  "x352_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_Naive")),
+  
+  "pbs_CD8_EFF"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EFF")),
+  "x251_CD8_EFF"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EFF")),
+  "x310_CD8_EFF"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EFF")),
+  "x310_3_CD8_EFF"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EFF")),
+  "x352_CD8_EFF"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "CD8_EFF")),
+  
+  "pbs_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x251_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x310_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x310_3_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "Other")),
+  "x352_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_manual_confirmed$Annotations_New == "Other"))
+  
+)
+
+write.table(data_mc38_scrnaseq_annotation_manual,"mc38_cellcounts_scRNAseq_SPICA_annotation_MANNUAL.txt",sep="\t")
+
+
+df_long_mc3_SPICA_ANNOTATIN_CD4 <- reshape2::melt(data_mc38_scrnaseq_annotation_manual, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c( c(
+    "pbs_CD4_Tfh",
+    "x251_CD4_Tfh",
+    "x310_CD4_Tfh",
+    "x310_3_CD4_Tfh",
+    "x352_CD4_Tfh",
+    "pbs_CD4_Exh",
+    "x251_CD4_Exh",
+    "x310_CD4_Exh",
+    "x310_3_CD4_Exh",
+    "x352_CD4_Exh",
+    "pbs_CD4_Treg",
+    "x251_CD4_Treg",
+    "x310_CD4_Treg",
+    "x310_3_CD4_Treg",
+    "x352_CD4_Treg",
+    "pbs_CD4_CTL_Naive",
+    "x251_CD4_CTL_Naive",
+    "x310_CD4_CTL_Naive",
+    "x310_3_CD4_CTL_Naive",
+    "x352_CD4_CTL_Naive",
+    "pbs_CD4_CTL",
+    "x251_CD4_CTL",
+    "x310_CD4_CTL",
+    "x310_3_CD4_CTL",
+    "x352_CD4_CTL",
+    "pbs_NA",
+    "x251_NA",
+    "x310_NA",
+    "x310_3_NA",
+    "x352_NA"
+  ))
+))
+
+df_long_mc38_SPICA_ANNOTATIN_CD8 <- reshape2::melt(data_mc38_scrnaseq_annotation_manual, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c("pbs_CD8_TEX",
+                       "x251_CD8_TEX",
+                       "x310_CD8_TEX",
+                       "x310_3_CD8_TEX",
+                       "x352_CD8_TEX",
+                       "pbs_CD8_CM",
+                       "x251_CD8_CM",
+                       "x310_CD8_CM",
+                       "x310_3_CD8_CM",
+                       "x352_CD8_CM",
+                       "pbs_CD8_EM",
+                       "x251_CD8_EM",
+                       "x310_CD8_EM",
+                       "x310_3_CD8_EM",
+                       "x352_CD8_EM",
+                       "pbs_CD8_TPEX",
+                       "x251_CD8_TPEX",
+                       "x310_CD8_TPEX",
+                       "x310_3_CD8_TPEX",
+                       "x352_CD8_TPEX",
+                       "pbs_CD8_Naive",
+                       "x251_CD8_Naive",
+                       "x310_CD8_Naive",
+                       "x310_3_CD8_Naive",
+                       "x352_CD8_Naive",
+                       "pbs_CD8_EFF",
+                       "x251_CD8_EFF",
+                       "x310_CD8_EFF",
+                       "x310_3_CD8_EFF",
+                       "x352_CD8_EFF")
+))
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD4_MANUAL_ANNOTATION.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc3_SPICA_ANNOTATIN_CD4, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 100, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 150, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD8_MANUAL_ANNOTATION.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc38_SPICA_ANNOTATIN_CD8, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+saveRDS(mc38_object_list_rna_integrated_annotated_manual_confirmed,"mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+
+
+###############################################
+###############################################
+#TRBV Stuff for Jonathan and Allart ###########
+###############################################
+###############################################
+#Get the rownames
+#Find which TRBV13 is found within the integrated data set
+rownames(mc38_object_list_rna_integrated_annotated_manual_confirmed)[grep("trbv13", 
+                                                                          rownames(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$integrated@scale.data), 
+                                                                          ignore.case = T)]
+###############################################
+#Adding TRBV13-3 information in the RNA column 
+###############################################
+####Taking the data from integrated and adding it to the metadat. 
+DefaultAssay(mc38_object_list_rna_integrated_annotated_manual_confirmed) <- "RNA"
+
+#Now add the TRBV into the 
+mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Trvb5_13_2_3 <- mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",] +
+                                                                                    mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",]
+
+  
+#Make a feature plot using GGPLOT2
+mc38_object_list_rna_integrated_annotated_manual_confirmed$diff <- scales::rescale(mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_2_3, to = c(0,1))
+hist(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff)
+##############Manual 
+jpeg("FEATUREPLOT_TRBV13-2_3_mc38.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+        theme_classic() +
+        geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff < 0.36 &
+                                          mc38_object_list_rna_integrated_annotated_manual_confirmed$diff > 0.1, "grey",
+                                        "red")) +
+
+
+      xlab("UMAP1") + ylab("UMAP2") + 
+      labs(col="") +
+      facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+jpeg("FEATUREPLOT_TRBV13-2_3_mc38_scalebar.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, aes(colour=mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_2_3)) +
+  scale_color_gradientn(colors = c("grey", scales::alpha("grey", 0.7), "gray", "gray", scales::alpha("tomato", 0.5), "red"),
+                        values = c(0,0.05, 0.1,0.25,0.4,1)
+  ) +
+  
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+############################ 
+############################ 
+############################ 
+##############TRBV13-3 ONLY 
+mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Trvb5_13_3 <- mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_3 <- scales::rescale(mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_3, to = c(0,1))
+hist(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_3)
+
+jpeg("FEATUREPLOT_TRBV13-3__ONLY_mc38.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_3 < 0.2, "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+jpeg("FEATUREPLOT_TRBV13-3_mc38_ONLY_scalebar.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, aes(colour=mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_3)) +
+  scale_color_gradientn(colors = c("grey", scales::alpha("grey", 0.7), "gray", "gray", scales::alpha("tomato", 0.5), "red"),
+                        values = c(0,0.05, 0.1,0.25,0.4,1)
+  ) +
+  
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+############################ 
+############################ 
+##############TRBV13-2 ONLY
+mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Trvb5_13_2 <- mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_2 <- scales::rescale(mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_2, to = c(0,1))
+hist(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_2)
+
+jpeg("FEATUREPLOT_TRBV13-2__ONLY_mc38.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed$diff_TRBV13_2 < 0.2, "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+jpeg("FEATUREPLOT_TRBV13-2_mc38_ONLY_scalebar.jpeg",height=5,width=6,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, aes(colour=mc38_object_list_rna_integrated_annotated_manual_confirmed$Trvb5_13_2)) +
+  scale_color_gradientn(colors = c("grey", scales::alpha("grey", 0.7), "gray", "gray", scales::alpha("tomato", 0.5), "red"),
+                        values = c(0,0.05, 0.1,0.25,0.4,1)
+  ) +
+  
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+dev.off()
+
+
+##############Seurat 
+#FeaturePlot
+DefaultAssay(mc38_object_list_rna_integrated_annotated_manual_confirmed) <- "RNA"
+jpeg("DIMPLOT_SeuratClusters_And_ManualAnnotations_TRBV13-2&3.jpeg",height=4,width=16,units="in",res=600)
+a = FeaturePlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                #cells = rownames(NSLSC_object_list_rna_integrated_all_annotated@meta.data)[which(NSLSC_object_list_rna_integrated_all_annotated$orig.ident == "Treated")],
+                features = c("Trbv13-2"),
+                blend = F,
+                col=c("grey", "red"),
+                order = T,
+                min.cutoff = "q25",
+                max.cutoff = "q65",
+                split.by = "Treatment",
+                reduction="RNA_UMAP"
+)
+
+a
+dev.off()
+
+########Making the data table for Allart and Jonathan
+########################Extract  data:
+mc38_object_list_rna_integrated_annotated_manual_confirmed <- readRDS("mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+
+#EXTRACTING DATA:
+mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Trvb13_2 <- mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",] 
+
+combined_metadata <- mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data
+#combine (11551 total numebr of cells combined, but onces NAs are removed only 5808 remain)
+combined_metadata_subset<- combined_metadata %>% select("treatment_status", "Treatment","seurat_clusters","TILPRED_TIL","TILPRED_TIL_score","Annotations_New", "Trvb13_2")
+colnames(combined_metadata_subset) <- c("Patient_Barcode","Treatment","seurat_clusters","SPICA_Annotation","SPICA_Score","Manual_Annotations", "Trvb13_2")
+
+
+write.table(combined_metadata_subset,"MC38_model_Annotation_confirm_datatable_Relabeled_RNA_Slot.csv",sep=",")
+
+########Generating plots for Jonathan and Allart for TRBV132-2 and TRBV13-3
+########################The density plot that jonathan requested.
+mc38_object_list_rna_integrated_annotated_manual_confirmed <- readRDS("mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+
+DefaultAssay(mc38_object_list_rna_integrated_annotated_manual_confirmed) <- "RNA"
+jpeg("GGridgesplot_TRBV132_MC38_mouse_model.jpeg",height=5,width=8,units="in",res=600)
+a <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+            aes(x=mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",],
+                y=mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment,
+                fill=mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.5, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values = c("PBS" = "gray", 
+                               "x251" = "orange",
+                               "x310" = "blue",
+                               "3" = "yellow",
+                               "x352" = "green")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-2") + 
+  theme(plot.title = element_text(vjust = 0.8, hjust = 0.9, size = 18)) +
+  xlim(0.2,4)
+
+b<- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+           aes(x=mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-3",],
+               y=mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment,
+               fill=mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.5, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values = c("PBS" = "gray", 
+                               "x251" = "orange",
+                               "x310" = "blue",
+                               "3" = "yellow",
+                               "x352" = "green")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-3") + 
+  theme(plot.title = element_text(vjust = 0.8, hjust = 0.9, size = 18)) +
+  xlim(0.01,4)
+a | b
+dev.off()
+
+
+
+#################################################
+#################################################
+###Jonathan's question regarding the DimPlot generation and doing a heatmap of density
+jpeg("UMAP_withcell_DENSITY_MC38_MODEL.jpeg",height=5,width=12,units="in",res=600)
+UMAP <- DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                group.by = "Annotations_New",
+                cols=c25)
+p1 <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+             aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",contour=T)+
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+UMAP | p1
+dev.off()
+
+#################################################MC138 MODEL
+#################################################
+##DGE ANALYSIS
+#################################################
+#################################################
+cell_pop <- unique(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Annotations_New)
+Idents(mc38_object_list_rna_integrated_annotated_manual_confirmed) <- mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment
+
+for(ii in 1:length(cell_pop)){
+  
+  message(paste("Working with", cell_pop[ii]))
+  temp.cells <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                       cells=which(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Annotations_New == cell_pop[ii]))
+  DefaultAssay(temp.cells) <- "RNA"
+  
+  # find DEGs
+  message("Finding DEGs for x251 treatment relative to PBS")
+  temp.res_x251 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "x251", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  all_genes_x251 <- rownames(temp.res_x251)
+  temp.res_x251$x251_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x251"), assay = "RNA", slot = 'data')[all_genes_x251,])))
+  temp.res_x251$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x251,])))
+  temp.res_x251$manual_confirmed_avg_FC <- temp.res_x251$x251_normalized_counts - temp.res_x251$PBS_normalized_counts
+  
+  message("Finding DEGs for x310 treatment relative to PBS")
+  temp.res_x310 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "x310", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  all_genes_x310 <- rownames(temp.res_x310)
+  temp.res_x310$x310_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x310"), assay = "RNA", slot = 'data')[all_genes_x310,])))
+  temp.res_x310$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x310,])))
+  temp.res_x310$manual_confirmed_avg_FC <- temp.res_x310$x310_normalized_counts - temp.res_x310$PBS_normalized_counts
+  
+  message("Finding DEGs for x352 treatment relative to PBS")
+  temp.res_x352 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "x352", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  
+  all_genes_x352 <- rownames(temp.res_x352)
+  temp.res_x352$x352_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x310"), assay = "RNA", slot = 'data')[all_genes_x352,])))
+  temp.res_x352$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x352,])))
+  temp.res_x352$manual_confirmed_avg_FC <- temp.res_x352$x352_normalized_counts - temp.res_x352$PBS_normalized_counts
+  
+  
+  message("Finding DEGs for x310_3 treatment relative to PBS")
+  temp.res_x310_3 <- tryCatch(FindMarkers(temp.cells, 
+                                        # slot = "data",
+                                        min.cells.group = 5,
+                                        ident.1 = "3", ident.2 = "PBS", 
+                                        logfc.threshold = 0.2, 
+                                        min.pct = 0.2),
+                            error = function(xx){
+                              message(xx)
+                              dummy_df <- data.frame(p_val = rep(NA,2),
+                                                     avg_log2FC = rep(NA,2), 
+                                                     pct.1 = rep(NA,2),
+                                                     pct.2  = rep(NA,2),
+                                                     p_val_adj = rep(NA,2))
+                              return(dummy_df)
+                            })
+  all_genes_x310_3 <- rownames(temp.res_x310_3)
+  temp.res_x310_3$x310_3_normalized_counts<- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "x310"), assay = "RNA", slot = 'data')[all_genes_x310_3,])))
+  temp.res_x310_3$PBS_normalized_counts <- log2(1+rowMeans(as.data.frame(GetAssayData(subset(temp.cells, subset = Treatment == "PBS"), assay = "RNA", slot = 'data')[all_genes_x310_3,])))
+  temp.res_x310_3$manual_confirmed_avg_FC <- temp.res_x310_3$x310_3_normalized_counts - temp.res_x310_3$PBS_normalized_counts
+  
+  
+  temp.res_x352$Gene <- rownames(temp.res_x352)
+  temp.res_x310$Gene <- rownames(temp.res_x310)
+  temp.res_x251$Gene <- rownames(temp.res_x251)
+  temp.res_x310_3$Gene <- rownames(temp.res_x310_3)
+  
+  if(ii == 1){
+    res_deg_x352 <- list(temp.res_x352)
+    res_deg_x310 <- list(temp.res_x310) 
+    res_deg_x251 <- list(temp.res_x251) 
+    res_deg_x310_3 <- list(temp.res_x310_3) 
+    
+    names(res_deg_x352) <- cell_pop[ii]
+    names(res_deg_x310) <- cell_pop[ii]
+    names(res_deg_x251) <- cell_pop[ii]
+    names(res_deg_x310_3) <- cell_pop[ii]
+ 
+    } else {
+    
+    res_deg_x352[[ii]] <- temp.res_x352
+    res_deg_x310[[ii]] <- temp.res_x310
+    res_deg_x251[[ii]] <- temp.res_x251
+    res_deg_x310_3[[ii]] <- temp.res_x310_3
+    
+    names(res_deg_x352)[[ii]] <- cell_pop[ii]
+    names(res_deg_x310)[[ii]] <- cell_pop[ii]
+    names(res_deg_x251)[[ii]] <- cell_pop[ii]
+    names(res_deg_x310_3)[[ii]] <- cell_pop[ii]
+    
+  }
+  
+  message(paste(" >> Done for", cell_pop[ii]))
+}
+
+
+res_deg_x352_bound <- rbindlist(res_deg_x352, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+
+res_deg_x310_bound <- rbindlist(res_deg_x310, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+
+res_deg_x251_bound <- rbindlist(res_deg_x251, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+res_deg_x310_3_bound <- rbindlist(res_deg_x310_3, use.names = T, idcol = T) %>%
+  mutate(Significant = ifelse(p_val_adj <= 0.05, "YES", "NO")) %>%
+  mutate(Direction = ifelse(Significant == "YES" & avg_log2FC > 0, "UP",
+                            ifelse(Significant == "YES" & avg_log2FC < 0, "DWN", "NS")))
+
+
+write.table(res_deg_x352_bound, "all_res_deg_MC38_x352_vs_PBS_Updated_Read_Counts.csv", sep=",", quote = F, row.names = F)
+write.table(res_deg_x310_bound, "all_res_deg_MC38_x310_vs_PBS_Updated_Read_Counts.csv", sep=",", quote = F, row.names = F)
+write.table(res_deg_x251_bound, "all_res_deg_MC38_x251_vs_PBS_Updated_Read_Counts.csv", sep=",", quote = F, row.names = F)
+write.table(res_deg_x310_3_bound, "all_res_deg_MC38_x310_3_vs_PBS_Updated_Read_Counts.csv", sep=",", quote = F, row.names = F)
+
+
+
+
+############################################################################## 
+############################################################################## 
+########################## GENERATING Density UMAPs
+#CD8+ GZMB+ TIM3- PD1+ TCF7low-
+#KLRK1+IL7Ra+ CD8+
+mc38_object_list_rna_integrated_annotated_manual_confirmed <- readRDS("mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+
+
+median_Gzmb <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Gzmb",]))
+median_Cd8a <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Cd8a",]))
+median_Havcr2 <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Havcr2",]))
+median_Pdcd1 <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Pdcd1",]))
+median_Tcf7 <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Tcf7",]))
+median_Klrk1 <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Klrk1",]))
+median_IL7Ra <- median(as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Il7r",]))
+#Scatter plot to assess correlation between CD8 protein and RNA levels:
+# Scatter plot to assess correlation between CD8 protein and RNA levels:
+jpeg("ScatterPlots_Multiple_ForUMAP_CT26_mouse_model.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Extracting median values
+gzmb <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Gzmb",]),
+                   y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Gzmb, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Gzmb") + ylab("CD8a")
+
+tim3 <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Havcr2",]),
+                   y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Havcr2, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Tim3") + ylab("CD8a")
+
+pd1 <- ggplot(NULL, 
+              aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Pdcd1",]),
+                  y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Pdcd1, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Pdcd1") + ylab("CD8a")
+
+tcf7 <- ggplot(NULL, 
+               aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Tcf7",]),
+                   y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Tcf7, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Tcf7") + ylab("CD8a")
+
+Klrk1 <- ggplot(NULL, 
+                aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Klrk1",]),
+                    y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_Klrk1, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Klrk1") + ylab("CD8a")
+
+Il7ra <- ggplot(NULL, 
+                aes(x = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Il7r",]),
+                    y = 1 * as.numeric(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Cd8a",]))
+) +
+  geom_point(size = 0.25) +
+  geom_vline(xintercept = median_IL7Ra, linetype = "dashed", color = "blue", size = 1) +
+  geom_hline(yintercept = median_Cd8a, linetype = "dashed", color = "red", size = 1) +
+  theme_classic() +
+  scale_color_gradient(low = "cyan", high = "red") +
+  xlab("Il7ra") + ylab("CD8a")
+
+(gzmb | tim3 | Klrk1) / (pd1 | tcf7 | Il7ra)
+dev.off()
+
+#Density umap to label CD8+ GZMB+ TIM3- PD1+ TCF7low T cells
+####First label the cells:
+mc38_object_list_rna_integrated_annotated_manual_confirmed$CD8_GZMB_PD1_TIMneg_TCFlow <- 
+  ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD4_CD8_TREG_LABELS =="CD8_Tcells" &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Gzmb",] > median_Gzmb &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Havcr2",] == 0  &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Pdcd1",] > median_Pdcd1 &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Tcf7",] < 0.25 ,
+         "Positive",
+         "Negative")
+
+mc38_object_list_rna_integrated_annotated_manual_confirmed$CD8_Klrk1_Il7ra_TCFlow <- 
+  ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD4_CD8_TREG_LABELS =="CD8_Tcells" &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Klrk1",] > median_Klrk1 &
+           mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@counts["Il7r",] > median_IL7Ra,
+         "Positive",
+         "Negative")
+
+#nrow(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data[which(mc38_object_list_rna_integrated_annotated_manual_confirmed$CD8_GZMB_PD1_TIMneg_TCFlow=="Positive"),])
+
+positive <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                   cells=which(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD8_GZMB_PD1_TIMneg_TCFlow == "Positive"))
+Negative <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                   cells=which(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD8_GZMB_PD1_TIMneg_TCFlow == "Negative"))
+
+jpeg("UMAP_withcell_DENSITY_Jonathan_UMAP_CT26_MODEL.jpeg", height = 6, width = 15, units = "in", res = 600)
+# Combine levels of CD8_GZMB_PD1_TIMneg_TCFlow
+UMAP <- DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                group.by = "Annotations_New",
+                cols=c25) +
+  geom_text(x = 10, y = 10, label = "This is the original UMAP", size = 5, color = "black")
+
+p1 <- ggplot(positive@meta.data,
+             aes(x = positive@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = positive@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) +   # Set your custom y-axis coordinates
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) +
+  ggtitle("CD8+ GZMB+ TIM3- PD1+ TCF7 low T cells (176 cells)")
+#Negative cells
+p2 <- ggplot(Negative@meta.data,
+             aes(x = Negative@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = Negative@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  #facet_wrap(~ CD8_GZMB_PD1_TIMneg_TCFlow, scales = "free") + 
+  # Set legend title for negative cells
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20))
+superimposed_plot <- plot_grid(UMAP, p1/ p2, ncol = 2)
+superimposed_plot
+dev.off()
+
+######KLRK1+IL7Ra+ CD8+
+positive_klrk1_il7ra <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                               cells=which(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD8_Klrk1_Il7ra_TCFlow == "Positive"))
+Negative_klrk1_il7ra <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                               cells=which(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$CD8_Klrk1_Il7ra_TCFlow == "Negative"))
+
+jpeg("UMAP_withcell_DENSITY_Jonathan_UMAP_KLRK1_IL7RA_CT26_MODEL.jpeg", height = 6, width = 15, units = "in", res = 600)
+# Combine levels of CD8_GZMB_PD1_TIMneg_TCFlow
+UMAP <- DimPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+                group.by = "Annotations_New",
+                cols=c25)
+p1 <- ggplot(positive_klrk1_il7ra@meta.data,
+             aes(x = positive_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = positive_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) +   # Set your custom y-axis coordinates
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) +
+  ggtitle("KLRK1+ IL7Ra+ CD8+T cells (1363 cells)")
+#Negative cells
+p2 <- ggplot(Negative_klrk1_il7ra@meta.data,
+             aes(x = Negative_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = Negative_klrk1_il7ra@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99, color = "grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size = 5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill = ..level..), geom = "density_2d_filled", contour = TRUE) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00, 0.1, 0.25, 0.5, 0.8, 1)) +
+  theme(axis.text = element_text(size = 11),  # Adjust the font size here
+        legend.text = element_text(size = 12),
+        axis.title = element_text(size = 14, face = "bold"),
+        strip.text = element_text(size = 20)) +
+  xlim(c(-10, 10)) +  # Set your custom x-axis coordinates
+  ylim(c(-15, 10)) + 
+  geom_vline(xintercept = 0, linetype = "dashed", color = "blue", size = 0.2) +
+  geom_hline(yintercept = -5, linetype = "dashed", color = "red", size = 0.2) +
+  #facet_wrap(~ CD8_GZMB_PD1_TIMneg_TCFlow, scales = "free") + 
+  # Set legend title for negative cells
+  facet_grid(~  Treatment, scales = "free") +  
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20)) 
+
+superimposed_plot <- plot_grid(UMAP, p1/ p2, ncol = 2)
+superimposed_plot
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###################################################
+###################################################
+#################FOR 5 % MITOCHONDRIAL CUTOFF:
+###################################################
+###################################################
+###################################################
+pbs_dir<-"/home/hhassan/murine_dataset/mc38/PBS-none_GEX_results_GEX"
+x251_dir<-"/home/hhassan/murine_dataset/mc38/x251-0-2-0-2mg-ml_GEX_results_GEX"
+x310_dir<-"/home/hhassan/murine_dataset/mc38/x310-1-1mg-ml_GEX_results_GEX"
+x310_3_dir <- "/home/hhassan/murine_dataset/mc38/x310-3-3mg-ml_GEX_results_GEX"
+x352_dir<-"/home/hhassan/murine_dataset/mc38/x352-1-1mg-ml_GEX_results_GEX"
+
+pbs_mc38  <- Read10X(data.dir = pbs_dir)
+x251_mc38 <- Read10X(data.dir = x251_dir)
+x310_mc38 <- Read10X(data.dir = x310_dir)
+x310_3_mc38 <- Read10X(data.dir = x310_3_dir)
+x352_mc38 <- Read10X(data.dir = x352_dir)
+
+pbs_mc38_data <- CreateSeuratObject(counts = pbs_mc38)
+x251_mc38_data <- CreateSeuratObject(counts = x251_mc38)
+x310_mc38_data <- CreateSeuratObject(counts = x310_mc38)
+x310_3_mc38_data <- CreateSeuratObject(counts = x310_3_mc38)
+x352_mc38_data <- CreateSeuratObject(counts = x352_mc38)
+
+#Add treatment barcodes to the metadata:
+pbs_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(pbs_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_PBS", pbs_mc38_data@meta.data$treatment_status)
+x251_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x251_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x251", x251_mc38_data@meta.data$treatment_status)
+x310_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x310_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x310", x310_mc38_data@meta.data$treatment_status)
+x310_3_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x310_3_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x310_3", x310_3_mc38_data@meta.data$treatment_status)
+x352_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x352_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_x352", x352_mc38_data@meta.data$treatment_status)
+
+
+
+#Add mitochondrial and ribosomal reads into the  metadata and then apply filter
+pbs_mc38_data[["percent.mt"]] <- PercentageFeatureSet(pbs_mc38_data, pattern = "^mt-", assay = "RNA")
+pbs_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(pbs_mc38_data, pattern = "Rn45s", assay = "RNA")
+
+x251_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x251_mc38_data, pattern = "^mt-", assay = "RNA")
+x251_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x251_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x310_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x310_mc38_data, pattern = "^mt-", assay = "RNA")
+x310_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x310_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x310_3_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x310_3_mc38_data, pattern = "^mt-", assay = "RNA")
+x310_3_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x310_3_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+x352_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x352_mc38_data, pattern = "^mt-", assay = "RNA")
+x352_mc38_data[["percent.ribo"]] <- PercentageFeatureSet(x352_mc38_data, pattern = "^RP[SL]", assay = "RNA")
+
+pbs_mc38_data_2 <- subset(pbs_mc38_data, cells = colnames(pbs_mc38_data)[which(pbs_mc38_data@meta.data$nFeature_RNA > 200 & pbs_mc38_data@meta.data$nFeature_RNA < 4000 & pbs_mc38_data@meta.data$percent.mt < 5)])
+x251_mc38_data_2 <- subset(x251_mc38_data, cells = colnames(x251_mc38_data)[which(x251_mc38_data@meta.data$nFeature_RNA > 200 & x251_mc38_data@meta.data$nFeature_RNA < 4000 & x251_mc38_data@meta.data$percent.mt < 5)])
+x310_mc38_data_2 <- subset(x310_mc38_data, cells = colnames(x310_mc38_data)[which(x310_mc38_data@meta.data$nFeature_RNA > 200 & x310_mc38_data@meta.data$nFeature_RNA < 4000 & x310_mc38_data@meta.data$percent.mt < 5)])
+x310_3_mc38_data_2 <- subset(x310_3_mc38_data, cells = colnames(x310_3_mc38_data)[which(x310_3_mc38_data@meta.data$nFeature_RNA > 200 & x310_3_mc38_data@meta.data$nFeature_RNA < 4000 & x310_3_mc38_data@meta.data$percent.mt < 5)])
+x352_mc38_data_2 <- subset(x352_mc38_data, cells = colnames(x352_mc38_data)[which(x352_mc38_data@meta.data$nFeature_RNA > 200 & x352_mc38_data@meta.data$nFeature_RNA < 5000 & x352_mc38_data@meta.data$percent.mt < 5)])
+
+
+####################################################################################
+##############Integration of the scRNAseq dataset:
+mc38_object_list<- c(pbs_mc38_data_2,
+                     x251_mc38_data_2,
+                     x310_mc38_data_2,
+                     x310_3_mc38_data_2,
+                     x352_mc38_data_2
+)
+
+#Perform sctransform on each object. But first confirm the default assay for each.
+for (i in 1:length(mc38_object_list)) {
+  print(DefaultAssay(mc38_object_list[[i]]))
+}
+#for (i in 1:length(object_list_rna)) {
+# DefaultAssay(object_list_rna[[i]]) <- "SCT"
+#}
+for (i in 1:length(mc38_object_list)) {
+  mc38_object_list[[i]] <- SCTransform(mc38_object_list[[i]], vars.to.regress = "percent.mt", variable.features.n = 15000, verbose = TRUE)
+}
+
+#Now integrate the datasets.
+mc38_object_list_features <- SelectIntegrationFeatures(object.list = mc38_object_list, nfeatures = 15000)
+mc38_object_list <- PrepSCTIntegration(object.list = mc38_object_list, anchor.features = mc38_object_list_features, 
+                                       verbose = TRUE)
+#saveRDS(crc_object_list_rna,"crc_object_list_rna_preintegration_WITHOUTPT10.rds")
+#saveRDS(crc_object_list_rna.anchors2,"crc_anchors_usingreference.rds")
+mc38_object_list.anchors <- FindIntegrationAnchors(object.list = mc38_object_list, normalization.method = "SCT", 
+                                                   anchor.features = mc38_object_list_features, verbose = TRUE)
+mc38_object_list_rna_integrated <- IntegrateData(anchorset = mc38_object_list.anchors, normalization.method = "SCT", 
+                                                 verbose = TRUE)
+
+#Now add the reductions and DON'T SCALE!
+DefaultAssay(mc38_object_list_rna_integrated)
+
+#Add treatment
+mc38_object_list_rna_integrated@meta.data$Treatment <- sub(".+_", "", mc38_object_list_rna_integrated@meta.data$treatment_status)
+
+
+####################################################RESOLUTIONS
+mc38_object_list_rna_integrated <- mc38_object_list_rna_integrated %>% 
+  RunPCA(verbose = T,reduction.name = 'RNA_PCA',reduction.key='RNA_PCA_') %>% 
+  RunUMAP(reduction = "RNA_PCA", dims = 1:30, reduction.name = 'RNA_UMAP', reduction.key='RNA_UMAP_') %>%
+  FindNeighbors(reduction = "RNA_PCA", dims = 1:30) %>%
+  FindClusters(resolution = 0.05) %>%
+  FindClusters(resolution = 0.125) %>%
+  FindClusters(resolution = 0.2) %>%
+  FindClusters(resolution = 0.3) %>%
+  FindClusters(resolution = 0.4) %>%
+  FindClusters(resolution = 0.5) %>%
+  FindClusters(resolution = 0.6) %>%
+  FindClusters(resolution = 0.7) %>%
+  FindClusters(resolution = 0.8) %>%
+  FindClusters(resolution = 0.9) %>%
+  FindClusters(resolution = 1.0) %>%
+  FindClusters(resolution = 1.2)
+
+#Visualize the UMAP
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.6",
+             cols = c25)
+
+jpeg("Dimplot_all_IntegratedObject_res0.6_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.6",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.5_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.5",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.4_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("Dimplot_all_IntegratedObject_res0.3_RNA_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.4",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+######FEATURE PLOTS
+mc38_object_list_rna_integrated <- FindClusters(object = mc38_object_list_rna_integrated, resolution = 0.4)
+
+jpeg("FeaturePlot_CD8&CD4_RNAdefault.jpeg",height=8,width=14,units="in",res=600)
+cd8 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = "integrated_Cd8a",
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment",
+                   order = T)
+cd8 / cd4
+dev.off()
+
+#CD4 and FOXP3
+jpeg("FeaturePlot_CD4&FOXP3_RNAdefault.jpeg",height=8,width=14,units="in",res=600)
+foxp3 <- FeaturePlot(mc38_object_list_rna_integrated,
+                     reduction  = "RNA_UMAP",
+                     features = "integrated_Foxp3",
+                     min.cutoff = "q25",
+                     max.cutoff = "q95",
+                     split.by="Treatment",
+                     order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("integrated_Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   split.by="Treatment", order=T)
+cd4 / foxp3
+
+dev.off()
+
+#VlnPlot RNA default
+jpeg("violinplot_CD8_CD4_RNADefault.jpeg",height=4,width=12,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,features=c("integrated_Cd8a","integrated_Cd4"),stack=TRUE,flip=TRUE,pt.size = 0)
+dev.off()
+jpeg("violinplot_foxp3_rna_RNAdefault.jpeg",height=4,width=6,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,features=c("integrated_Foxp3"),stack=FALSE,flip=TRUE,pt.size = 0)
+dev.off()
+
+jpeg("qc_smoothscatter-nsclc.jpeg",height=4,width=6,units="in",res=600)
+par(mfrow=c(1,2), bty="n")
+smoothScatter(log10(mc38_object_list_rna_integrated_unclustered$nCount_RNA), log10(mc38_object_list_rna_integrated_unclustered$nFeature_RNA), 
+              xlab="log10(Library sizes)", ylab="log10(# of expressed genes)", 
+              nrpoints=500, cex=0.5) #Graph of ncount RNA vs nFeature RNA 
+smoothScatter(mc38_object_list_rna_integrated_unclustered$percent.ribo, mc38_object_list_rna_integrated_unclustered$percent.mt,ylim=c(0,100), xlim=c(0,100),xlab="Ribosome prop. (%)", ylab="Mitochondrial prop. (%)",nrpoints=500, cex=0.5) #Graph of percent mito and percent ribo in your features
+abline(h=5,  lty=1)
+abline(v=10, lty=1)
+dev.off()
+
+
+################################ labeling clusters:
+new_labels<-c("CD4_Tcells", #0
+              "CD4_Tcells", #1
+              "CD8_Tcells", #2
+              "CD8_Tcells", #3
+              "CD4_Tcells",          #4
+              "CD8_Tcells",          #5
+              "Other", #6
+              "CD8_Tcells", #7
+              "CD4_Tcells",          #8
+              "Other", #9
+              "CD4_Tcells", #10
+              "Other",         #11
+              "CD4_Tcells", #12
+              "Other"          #13
+)
+
+#relable clusters:
+names(new_labels)<- levels(mc38_object_list_rna_integrated)
+mc38_object_list_rna_integrated <- RenameIdents(object = mc38_object_list_rna_integrated, new_labels)
+
+#Now adding the updated labels to metadata
+mc38_object_list_rna_integrated@meta.data$CD4_CD8_TREG_LABELS <- mc38_object_list_rna_integrated@active.ident
+
+levels(mc38_object_list_rna_integrated)
+
+#Plotting the DimPlot
+jpeg("Dimplot_all_IntegratedObject_res0.6_CD4_CD8_mc38.jpeg",height=4,width=12,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             cols = c25)
+rna 
+dev.off()
+
+####################################################################################automatic annotation of celltypes
+####################---ProjectTil---####################
+##########NOW Running PROJECTILS----####################
+library(AUCell)
+library(SingleCellExperiment)
+library(TILPRED)
+library(ProjecTILs)
+library(celldex)
+library(SingleR)
+
+score_cd <- function(object) {
+  vector <- object@meta.data$TILPRED_TIL %>% unique()
+  scores <- vector("numeric",length=length(vector))
+  dataframe <- object@meta.data
+  for (i in seq_along(vector)) {
+    data <- dataframe[which(dataframe$TILPRED_TIL == as.character(vector[[i]])),]
+    scores[i] <-as.numeric(mean(data$TILPRED_TIL_score))
+  }
+  df <- data.frame(labels = vector, confidence_score = scores)
+  return(df)
+}
+
+#RDS OBJECT:
+mc38_object_list_rna_integrated 
+
+
+
+#Now Subset by CD8, CD4 and others:
+mc38_object_list_rna_integrated_CD4 <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="CD4_Tcells")
+mc38_object_list_rna_integrated_CD8 <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="CD8_Tcells")
+mc38_object_list_rna_integrated_other <- subset(mc38_object_list_rna_integrated,subset=CD4_CD8_TREG_LABELS=="Other")
+
+
+ref_cd4 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD4T_human_ref_v1.rds")
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD8T_human_ref_v1.rds")
+refCols <- c("#edbe2a", "#A58AFF", "#53B400", "#F8766D", "#00B6EB", "#d1cfcc", "#FF0000", "#87f6a5", "#e812dd")
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3")
+
+#Load the required datatables:
+cell.cycle.obj <- ProjecTILs::cell.cycle.obj
+Hs2Mm.convert.table <- ProjecTILs::Hs2Mm.convert.table
+
+#################Labeling CD4 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD4) <- "RNA"
+query.projected.cd4 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD4, ref=ref_cd4, filter.cells = F) #This reduces the number of cells down to 12999. So you cannot merge the datasets!
+#query.projected.cd4 <- ProjecTILs::Run.ProjecTILs(NSLSC_object_list_rna_integrated_all, ref=ref_cd4)
+#Plot the projections:
+#ProjecTILs::plot.projection(ref_cd4, query.projected.cd4, linesize = 0.5, pointsize = 0.5)
+query.projected.cd4 <- ProjecTILs::cellstate.predict(ref=ref_cd4, query=query.projected.cd4)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL<- query.projected.cd4@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL_score <- query.projected.cd4@meta.data$functional.cluster.conf
+
+
+#################Labeling CD8 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD8) <- "RNA"
+query.projected.cd8 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD8, ref=ref_cd8, filter.cells = F) 
+#Plot the projections:
+query.projected.cd8 <- ProjecTILs::cellstate.predict(ref=ref_cd8, query=query.projected.cd8)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL<- query.projected.cd8@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL_score <- query.projected.cd8@meta.data$functional.cluster.conf
+
+
+#################Labeling others -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_other) <- "RNA"
+mc38_object_list_rna_integrated_other@meta.data$TILPRED_TIL <- as.character("NA")
+mc38_object_list_rna_integrated_other@meta.data$TILPRED_TIL_score <- as.numeric(0)
+
+
+#Now Merge the objects back:
+mc38_object_list_rna_integrated_annotated<- merge(mc38_object_list_rna_integrated_CD4,y=c(mc38_object_list_rna_integrated_CD8, mc38_object_list_rna_integrated_other), merge.data = TRUE)
+mc38_object_list_rna_integrated_annotated[["RNA_PCA"]] <- mc38_object_list_rna_integrated[["RNA_PCA"]]
+mc38_object_list_rna_integrated_annotated[["RNA_UMAP"]] <- mc38_object_list_rna_integrated[["RNA_UMAP"]]
+
+
+#Generate a dataframe with the scores and then plot them using ggplot2
+score_cd(mc38_object_list_rna_integrated_annotated)
+
+#Count cells:
+cell_cluster_number<- cell_cluster_count(mc38_object_list_rna_integrated_annotated)
+
+#UMAP of annotated cells
+jpeg("Dimplot_annotated_UMAP_SPICA.jpeg",height=4,width=5,units="in",res=600)
+rna <- DimPlot(mc38_object_list_rna_integrated_annotated,reduction="RNA_UMAP",group.by = "TILPRED_TIL",cols =c25)
+rna
+dev.off()
+
+# Create the bar plot
+jpeg("Cell_count_annotated_cluster_SPICA.jpeg",height=6,width=10,units="in",res=600)
+plot <- ggplot(cell_cluster_number, aes(x = labels, y = confidence_score, fill = labels)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Cell Count by Annotation", x = "Annotation", y = "Absolute Cell Count") +
+  geom_hline(yintercept = 200, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot
+dev.off()
+####################---ProjectTil---####################
+
+
+
+jpeg("UMAP_ANNOTATED_SPICA.jpeg",height=4,width=12,units="in",res=600)
+rna<-DimPlot(mc38_object_list_rna_integrated_annotated,
+             reduction  = "RNA_UMAP",
+             split.by="Treatment",
+             group.by= "TILPRED_TIL",
+             cols = c25)
+rna 
+dev.off()
+
+
+saveRDS(mc38_object_list_rna_integrated_annotated,"mc38_object_list_rna_integrated_annotated_5percent_mito.rds")
+ 
+#Generate a table of cell count by treatment:
+#Generate a dataframe with the number of cells remaining. 
+mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito<-readRDS("mc38_object_list_rna_integrated_annotated_5percent_mito.rds")
+
+data_mc38_scrnaseq_annotation_5per_mito <- data.frame("pbs_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Tfh")),
+                                                      "x251_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Tfh")),
+                                                      "x310_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Tfh")),
+                                                      "x310_3_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Tfh")),
+                                                      "x352_CD4_Tfh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Tfh")),
+                                                      
+                                                      "pbs_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_Exh")),
+                                                      "x251_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_Exh")),
+                                                      "x310_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_Exh")),
+                                                      "x310_3_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_Exh")),
+                                                      "x352_CD4_CTL_Exh"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_Exh")),
+                                                      
+                                                      "pbs_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Treg")),
+                                                      "x251_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Treg")),
+                                                      "x310_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Treg")),
+                                                      "x310_3_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Treg")),
+                                                      "x352_CD4_Treg"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Treg")),
+                                                      
+                                                      "pbs_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.NaiveLike")),
+                                                      "x251_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.NaiveLike")),
+                                                      "x310_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.NaiveLike")),
+                                                      "x310_3_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.NaiveLike")),
+                                                      "x352_CD4_CTL_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.NaiveLike")),
+                                                      
+                                                      "pbs_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Th17")),
+                                                      "x251_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Th17")),
+                                                      "x310_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Th17")),
+                                                      "x310_3_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Th17")),
+                                                      "x352_CD4_Th17"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.Th17")),
+                                                      
+                                                      "pbs_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                                      "x251_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                                      "x310_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                                      "x310_3_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                                      "x352_CD4_EOMES"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_EOMES")),
+                                                      
+                                                      "pbs_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                                      "x251_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                                      "x310_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                                      "x310_3_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                                      "x352_CD4_GNLY"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD4.CTL_GNLY")),
+                                                      
+                                                      "pbs_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEX")),
+                                                      "x251_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEX")),
+                                                      "x310_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEX")),
+                                                      "x310_3_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEX")),
+                                                      "x352_CD8_TEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEX")),
+                                                      
+                                                      "pbs_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.CM")),
+                                                      "x251_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.CM")),
+                                                      "x310_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.CM")),
+                                                      "x310_3_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.CM")),
+                                                      "x352_CD8_CM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.CM")),
+                                                      
+                                                      "pbs_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.EM")),
+                                                      "x251_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.EM")),
+                                                      "x310_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.EM")),
+                                                      "x310_3_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.EM")),
+                                                      "x352_CD8_EM"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.EM")),
+                                                      
+                                                      "pbs_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TPEX")),
+                                                      "x251_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TPEX")),
+                                                      "x310_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TPEX")),
+                                                      "x310_3_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TPEX")),
+                                                      "x352_CD8_TPEX"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TPEX")),
+                                                      
+                                                      "pbs_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.NaiveLike")),
+                                                      "x251_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.NaiveLike")),
+                                                      "x310_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.NaiveLike")),
+                                                      "x310_3_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.NaiveLike")),
+                                                      "x352_CD8_Naive"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.NaiveLike")),
+                                                      
+                                                      "pbs_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEMRA")),
+                                                      "x251_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEMRA")),
+                                                      "x310_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEMRA")),
+                                                      "x310_3_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEMRA")),
+                                                      "x352_CD8_TEMRA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "CD8.TEMRA")),
+                                                      
+                                                      "pbs_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "PBS" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "NA")),
+                                                      "x251_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x251" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "NA")),
+                                                      "x310_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x310" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "NA")),
+                                                      "x310_3_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "3" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "NA")),
+                                                      "x352_NA"=as.numeric(sum(mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito@meta.data$Treatment == "x352" & mc38_object_list_rna_integrated_annotated_5percent_mito_5percent_mito$TILPRED_TIL == "NA"))
+                                                      
+)
+
+write.table(data_mc38_scrnaseq_annotation_5per_mito,"mc38_cellcounts_scRNAseq_SPICA_annotation_5per.txt",sep="\t")
+
+df_long_mc3_SPICA_ANNOTATIN_CD4_5per <- reshape2::melt(data_mc38_scrnaseq_annotation_5per_mito, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD4_Tfh", "x251_CD4_Tfh", "x310_CD4_Tfh", "x310_3_CD4_Tfh", "x352_CD4_Tfh",  "pbs_CD4_Treg", "x251_CD4_Treg", "x310_CD4_Treg", "x310_3_CD4_Treg", "x352_CD4_Treg", 
+    "pbs_CD4_CTL_Exh", "x251_CD4_CTL_Exh", "x310_CD4_CTL_Exh", "x310_3_CD4_CTL_Exh", "x352_CD4_CTL_Exh", 
+    "pbs_CD4_CTL_Naive", "x251_CD4_CTL_Naive", "x310_CD4_CTL_Naive", "x310_3_CD4_CTL_Naive", "x352_CD4_CTL_Naive", 
+    "pbs_CD4_Th17", "x251_CD4_Th17", "x310_CD4_Th17", "x310_3_CD4_Th17", "x352_CD4_Th17", 
+    "pbs_CD4_EOMES", "x251_CD4_EOMES", "x310_CD4_EOMES", "x310_3_CD4_EOMES", "x352_CD4_EOMES", 
+    "pbs_CD4_GNLY", "x251_CD4_GNLY", "x310_CD4_GNLY", "x310_3_CD4_GNLY", "x352_CD4_GNLY","pbs_NA", "x251_NA", "x310_NA", "x310_3_NA", "x352_NA"
+  )
+))
+
+df_long_mc38_SPICA_ANNOTATIN_CD8_5per <- reshape2::melt(data_mc38_scrnaseq_annotation_5per_mito, id.vars = NULL, measure.vars = c( 
+  vector_of_items <- c(
+    "pbs_CD8_TEX", "x251_CD8_TEX", "x310_CD8_TEX", "x310_3_CD8_TEX", "x352_CD8_TEX", 
+    "pbs_CD8_CM", "x251_CD8_CM", "x310_CD8_CM", "x310_3_CD8_CM", "x352_CD8_CM", 
+    "pbs_CD8_EM", "x251_CD8_EM", "x310_CD8_EM", "x310_3_CD8_EM", "x352_CD8_EM", 
+    "pbs_CD8_TPEX", "x251_CD8_TPEX", "x310_CD8_TPEX", "x310_3_CD8_TPEX", "x352_CD8_TPEX", 
+    "pbs_CD8_Naive", "x251_CD8_Naive", "x310_CD8_Naive", "x310_3_CD8_Naive", "x352_CD8_Naive", 
+    "pbs_CD8_TEMRA", "x251_CD8_TEMRA", "x310_CD8_TEMRA", "x310_3_CD8_TEMRA", "x352_CD8_TEMRA"
+  )
+))
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD4_5per.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc3_SPICA_ANNOTATIN_CD4_5per, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 100, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 150, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD8_5per.jpeg",height=4,width=12,units="in",res=600)
+ggplot(df_long_mc38_SPICA_ANNOTATIN_CD8_5per, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 100, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 150, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#################################################MC38 mouse model NEW:------MARCH 2024
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+#####################################################################################################################################################################################################################################################
+
+
+pbs_dir<-"/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-PBS_GEX_results_GEX"
+x0019_dir<-"/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-0019_GEX_results_GEX"
+x0034_dir<-"/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-0034_GEX_results_GEX"
+x0037_dir <- "/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-0037_GEX_results_GEX"
+x0119_dir<-"/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-0119_GEX_results_GEX"
+x0307_dir <- "/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-0307_GEX_results_GEX"
+pd1_dir <- "/home/hhassan/murine_dataset/mc38_2024/MC38-MoA-PD1_GEX_results_GEX"
+
+pbs_mc38  <- Read10X(data.dir = pbs_dir)
+x0019_mc38 <- Read10X(data.dir = x0019_dir)
+x0034_mc38 <- Read10X(data.dir = x0034_dir)
+x0037_mc38 <- Read10X(data.dir = x0037_dir)
+x0119_mc38 <- Read10X(data.dir = x0119_dir)
+x0307_mc38 <- Read10X(data.dir = x0307_dir)
+pd1_mc38 <- Read10X(data.dir = pd1_dir)
+
+pbs_mc38_data <- CreateSeuratObject(counts = pbs_mc38)
+x0019_mc38_data <- CreateSeuratObject(counts = x0019_mc38)
+x0034_mc38_data <- CreateSeuratObject(counts = x0034_mc38)
+x0037_mc38_data <- CreateSeuratObject(counts = x0037_mc38)
+x0119_mc38_data <- CreateSeuratObject(counts = x0119_mc38)
+x0307_mc38_data <- CreateSeuratObject(counts = x0307_mc38)
+pd1_mc38_data <- CreateSeuratObject(counts = pd1_mc38)
+
+#Add treatment barcodes to the metadata:
+pbs_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(pbs_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_PBS", pbs_mc38_data@meta.data$treatment_status)
+x0019_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x0019_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_0019", x0019_mc38_data@meta.data$treatment_status)
+x0034_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x0034_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_0034", x0034_mc38_data@meta.data$treatment_status)
+x0037_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x0037_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_0037", x0037_mc38_data@meta.data$treatment_status)
+x0119_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x0119_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_0119", x0119_mc38_data@meta.data$treatment_status)
+x0307_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(x0307_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_0307", x0307_mc38_data@meta.data$treatment_status)
+pd1_mc38_data@meta.data$treatment_status <- paste0(sapply(rownames(pd1_mc38_data@meta.data), function(xx) strsplit(xx, "-")[[1]][1]), "-mc38_pd1", pd1_mc38_data@meta.data$treatment_status)
+
+
+
+#Add mitochondrial and ribosomal reads into the  metadata and then apply filter
+pbs_mc38_data[["percent.mt"]] <- PercentageFeatureSet(pbs_mc38_data, pattern = "^mt-", assay = "RNA")
+
+x0019_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x0019_mc38_data, pattern = "^mt-", assay = "RNA")
+
+x0034_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x0034_mc38_data, pattern = "^mt-", assay = "RNA")
+
+x0037_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x0037_mc38_data, pattern = "^mt-", assay = "RNA")
+
+x0119_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x0119_mc38_data, pattern = "^mt-", assay = "RNA")
+
+x0307_mc38_data[["percent.mt"]] <- PercentageFeatureSet(x0307_mc38_data, pattern = "^mt-", assay = "RNA")
+
+pd1_mc38_data[["percent.mt"]] <- PercentageFeatureSet(pd1_mc38_data, pattern = "^mt-", assay = "RNA")
+
+
+###Now subsetting the data
+pbs_mc38_data_2 <- subset(pbs_mc38_data, cells = colnames(pbs_mc38_data)[which(pbs_mc38_data@meta.data$nFeature_RNA > 200 & pbs_mc38_data@meta.data$nFeature_RNA < 4000 & pbs_mc38_data@meta.data$percent.mt < 5)])
+
+x0019_mc38_data_2 <- subset(x0019_mc38_data, cells = colnames(x0019_mc38_data)[which(x0019_mc38_data@meta.data$nFeature_RNA > 200 & x0019_mc38_data@meta.data$nFeature_RNA < 4000 & x0019_mc38_data@meta.data$percent.mt < 5)])
+
+x0034_mc38_data_2 <- subset(x0034_mc38_data, cells = colnames(x0034_mc38_data)[which(x0034_mc38_data@meta.data$nFeature_RNA > 200 & x0034_mc38_data@meta.data$nFeature_RNA < 4000 & x0034_mc38_data@meta.data$percent.mt < 5)])
+
+x0037_mc38_data_2 <- subset(x0037_mc38_data, cells = colnames(x0037_mc38_data)[which(x0037_mc38_data@meta.data$nFeature_RNA > 200 & x0037_mc38_data@meta.data$nFeature_RNA < 4000 & x0037_mc38_data@meta.data$percent.mt < 5)])
+
+x0119_mc38_data_2 <- subset(x0119_mc38_data, cells = colnames(x0119_mc38_data)[which(x0119_mc38_data@meta.data$nFeature_RNA > 200 & x0119_mc38_data@meta.data$nFeature_RNA < 4000 & x0119_mc38_data@meta.data$percent.mt < 5)])
+
+x0307_mc38_data_2 <- subset(x0307_mc38_data, cells = colnames(x0307_mc38_data)[which(x0307_mc38_data@meta.data$nFeature_RNA > 200 & x0307_mc38_data@meta.data$nFeature_RNA < 4000 & x0307_mc38_data@meta.data$percent.mt < 5)])
+
+pd1_mc38_data_2 <- subset(pd1_mc38_data, cells = colnames(pd1_mc38_data)[which(pd1_mc38_data@meta.data$nFeature_RNA > 200 & pd1_mc38_data@meta.data$nFeature_RNA < 4000 & pd1_mc38_data@meta.data$percent.mt < 5)])
+
+
+################################## ------- VISUALIZING QC:
+#Generate a dataframe with the number of cells remaining. 
+data_mc38_scrnaseq <- data.frame("pbs_mc38_before"=as.numeric(pbs_mc38_data@meta.data %>% nrow()),
+                                 "pbs_mc38_after"=as.numeric(pbs_mc38_data_2@meta.data %>% nrow()),
+                                 "0019_mc38_before"=as.numeric(x0019_mc38_data@meta.data %>% nrow()),
+                                 "0019_mc38_after"=as.numeric(x0019_mc38_data_2@meta.data %>% nrow()),
+                                 "0034_mc38_before"=as.numeric(x0034_mc38_data@meta.data %>% nrow()),
+                                 "0034_mc38_after"=as.numeric(x0034_mc38_data_2@meta.data %>% nrow()),
+                                 "0037_mc38_before"=as.numeric(x0037_mc38_data@meta.data %>% nrow()),
+                                 "0037_mc38_after"=as.numeric(x0037_mc38_data_2@meta.data %>% nrow()),
+                                 "0119_mc38_before"=as.numeric(x0119_mc38_data@meta.data %>% nrow()),
+                                 "0119_mc38_after"=as.numeric(x0119_mc38_data_2@meta.data %>% nrow()),
+                                 "0307_mc38_before"=as.numeric(x0307_mc38_data@meta.data %>% nrow()),
+                                 "0307_mc38_after"=as.numeric(x0307_mc38_data_2@meta.data %>% nrow()),
+                                 "pd1_mc38_before"=as.numeric(pd1_mc38_data@meta.data %>% nrow()),
+                                 "pd1_mc38_after"=as.numeric(pd1_mc38_data_2@meta.data %>% nrow())
+)
+
+write.table(data_mc38_scrnaseq,"mc38_cellcounts_scRNAseq_filtering_5_PERCENT.txt",sep="\t")
+
+df_long_mc38 <- reshape2::melt(data_mc38_scrnaseq, id.vars = NULL, measure.vars = c( 
+  "pbs_mc38_before", "pbs_mc38_after",
+  "X0019_mc38_before", "X0019_mc38_after",
+  "X0034_mc38_before", "X0034_mc38_after",
+  "X0037_mc38_before", "X0037_mc38_after",
+  "X0119_mc38_before", "X0119_mc38_after",
+  "X0307_mc38_before", "X0307_mc38_after",
+  "pd1_mc38_before", "pd1_mc38_after"
+))
+
+jpeg("Absolute_cell_counts_before_after_filtering_mc38_5percentcutoff.jpeg",height=4,width=8,units="in",res=600)
+ggplot(df_long_mc38, aes(x = variable, y = value, fill = variable)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "QC Filters") +
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 3000, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 5000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+#VlnPlot QC------------------------------------:
+jpeg("qc_ncountRNA_individual_objects_mito_before.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red") 
+b=VlnPlot(x0019_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+c=VlnPlot(x0034_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+d=VlnPlot(x0037_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+e=VlnPlot(x0119_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+f=VlnPlot(x0307_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+g=VlnPlot(pd1_mc38_data,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12)) +  geom_hline(yintercept = 5, linetype = "dashed", color = "green") +  geom_hline(yintercept = 10, linetype = "dashed", color = "red")
+
+a | b | c |d |e |f |g
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_nfeature_before.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x0019_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x0034_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x0037_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x0119_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+f=VlnPlot(x0307_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+g=VlnPlot(pd1_mc38_data,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e |f |g
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_mito_after_5perc.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x0019_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x0034_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x0037_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x0119_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+f=VlnPlot(x0307_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+g=VlnPlot(pd1_mc38_data_2,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e |f |g
+dev.off()
+
+jpeg("qc_ncountRNA_individual_objects_nfeature_after.jpeg",height=4,width=12,units="in",res=600)
+a=VlnPlot(pbs_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+b=VlnPlot(x0019_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+c=VlnPlot(x0034_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+d=VlnPlot(x0037_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+e=VlnPlot(x0119_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+f=VlnPlot(x0307_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+g=VlnPlot(pd1_mc38_data_2,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a | b | c |d |e|f |g
+dev.off()
+
+
+####################################################################################
+##############Integration of the scRNAseq dataset:
+mc38_object_list<- c(pbs_mc38_data_2,
+                     x0019_mc38_data_2,
+                     x0034_mc38_data_2,
+                     x0037_mc38_data_2,
+                     x0119_mc38_data_2,
+                     x0307_mc38_data_2,
+                     pd1_mc38_data_2
+)
+
+#Perform sctransform on each object. But first confirm the default assay for each.
+for (i in 1:length(mc38_object_list)) {
+  print(DefaultAssay(mc38_object_list[[i]]))
+}
+#for (i in 1:length(object_list_rna)) {
+# DefaultAssay(object_list_rna[[i]]) <- "SCT"
+#}
+for (i in 1:length(mc38_object_list)) {
+  mc38_object_list[[i]] <- SCTransform(mc38_object_list[[i]],assay = "RNA",method = 'glmGamPoi', vars.to.regress = "percent.mt", variable.features.n = 15000, verbose = TRUE)
+}
+
+#Access a specific object within the list of seurat objects:
+mc38_object_list[[3]]@assays$SCT
+
+#Now integrate the datasets.
+mc38_object_list_features <- SelectIntegrationFeatures(object.list = mc38_object_list, nfeatures = 15000)
+mc38_object_list <- PrepSCTIntegration(object.list = mc38_object_list, anchor.features = mc38_object_list_features, 
+                                       verbose = TRUE)
+#saveRDS(crc_object_list_rna,"crc_object_list_rna_preintegration_WITHOUTPT10.rds")
+#saveRDS(crc_object_list_rna.anchors2,"crc_anchors_usingreference.rds")
+mc38_object_list.anchors <- FindIntegrationAnchors(object.list = mc38_object_list, normalization.method = "SCT", 
+                                                   anchor.features = mc38_object_list_features, verbose = TRUE, reference = c(1))
+mc38_object_list_rna_integrated <- IntegrateData(anchorset = mc38_object_list.anchors, normalization.method = "SCT", 
+                                                 verbose = TRUE)
+
+#Now add the reductions and DON'T SCALE!
+DefaultAssay(mc38_object_list_rna_integrated)
+
+#Add treatment
+mc38_object_list_rna_integrated@meta.data$Treatment <- sub(".+_", "", mc38_object_list_rna_integrated@meta.data$treatment_status)
+
+#SAVE RDS OBJECT:
+saveRDS(mc38_object_list_rna_integrated,"mc38_object_list_rna_integrated_unclustered.rds")
+
+
+####################################################RESOLUTIONS
+mc38_object_list_rna_integrated <- mc38_object_list_rna_integrated %>% 
+  RunPCA(verbose = T,reduction.name = 'RNA_PCA',reduction.key='RNA_PCA_') %>% 
+  RunUMAP(reduction = "RNA_PCA", dims = 1:30, reduction.name = 'RNA_UMAP', reduction.key='RNA_UMAP_') %>%
+  FindNeighbors(reduction = "RNA_PCA", dims = 1:30) %>%
+  FindClusters(resolution = 0.5)
+  #FindClusters(resolution = 0.125) %>%
+  #FindClusters(resolution = 0.2) %>%
+  #FindClusters(resolution = 0.3) %>%
+  #FindClusters(resolution = 0.4) %>%
+  #FindClusters(resolution = 0.5) %>%
+  #FindClusters(resolution = 0.6) %>%
+  #FindClusters(resolution = 0.7) %>%
+  #FindClusters(resolution = 0.8) %>%
+  #FindClusters(resolution = 0.9) %>%
+  #FindClusters(resolution = 1.0) %>%
+  #FindClusters(resolution = 1.2)
+
+
+saveRDS(mc38_object_list_rna_integrated,"mc38_object_list_rna_integrated_unclustered.rds")
+
+
+
+###Do resolutions of 0.5
+mc38_object_list_rna_integrated <- FindClusters(mc38_object_list_rna_integrated,resolution = 0.5)
+
+#Save the clustered dataset:
+saveRDS(mc38_object_list_rna_integrated,"mc38_object_list_rna_integrated_clustered.rds")
+
+################################ ################################ ################################ ################################ 
+########Now labelling CD8s and CD4s in the UMAP. 
+################################ labeling clusters:
+
+mc38_object_list_rna_integrated@meta.data$CD8_CD4_Labels <- ifelse(mc38_object_list_rna_integrated@meta.data$seurat_clusters=="2" |
+                                                                     mc38_object_list_rna_integrated@meta.data$seurat_clusters=="3" |
+                                                                     mc38_object_list_rna_integrated@meta.data$seurat_clusters=="5" |
+                                                                     mc38_object_list_rna_integrated@meta.data$seurat_clusters=="12" |
+                                                                     mc38_object_list_rna_integrated@meta.data$seurat_clusters=="15" |
+                                                                     mc38_object_list_rna_integrated@meta.data$seurat_clusters=="14",
+                                                                    "CD4_Positive",
+                                                                   "CD8_Positive")
+
+#Plotting the DimPlot
+jpeg("Dimplot_all_IntegratedObject_res0.5_CD4_CD8_mc38_APRIL122024.jpeg",height=4,width=6,units="in",res=600)
+rna<-DimPlot(mc38_object_list_rna_integrated,
+             group.by="CD8_CD4_Labels",
+             cols = c25)
+rna 
+dev.off()
+
+jpeg("VLNPLOT_all_IntegratedObject_CD4_CD8_mc38_APRIL122024.jpeg",height=4,width=6,units="in",res=600)
+rna<-VlnPlot(mc38_object_list_rna_integrated,features=c("Cd8a","Cd4","Foxp3"),stack = T,flip=T)
+rna 
+dev.off()
+
+
+####################################################################################automatic annotation of celltypes
+####################---ProjectTil---####################
+##########NOW Running PROJECTILS----####################
+##########AZIMUTH RUNNING----####################
+
+library(AUCell)
+library(SingleCellExperiment)
+library(TILPRED)
+library(ProjecTILs)
+library(celldex)
+library(SingleR)
+library(SeuratData)
+library(SeuratDisk)
+library(Azimuth)
+library(patchwork)
+
+
+score_cd <- function(object) {
+  vector <- object@meta.data$TILPRED_TIL %>% unique()
+  scores <- vector("numeric",length=length(vector))
+  dataframe <- object@meta.data
+  for (i in seq_along(vector)) {
+    data <- dataframe[which(dataframe$TILPRED_TIL == as.character(vector[[i]])),]
+    scores[i] <-as.numeric(mean(data$TILPRED_TIL_score))
+  }
+  df <- data.frame(labels = vector, confidence_score = scores)
+  return(df)
+}
+
+
+#Functon to find a count the number of cells in each cluster:
+cell_cluster_count <- function(object) {
+  vector <- object@meta.data$TILPRED_TIL %>% unique()
+  cell_count <- vector("numeric",length=length(vector))
+  dataframe <- object@meta.data
+  for (i in seq_along(vector)) {
+    data <- dataframe[which(dataframe$TILPRED_TIL == as.character(vector[[i]])),]
+    cell_count[i] <-as.numeric(nrow(data))
+  }
+  df <- data.frame(labels = vector, confidence_score = cell_count)
+  return(df)
+}
+
+#RDS OBJECT: mc38_object_list_rna_integrated 
+
+#Now Subset by CD8, CD4 and others:
+#mc38_object_list_rna_integrated_CD4 <- subset(mc38_object_list_rna_integrated,subset=CD8_CD4_Labels=="CD4_Positive")
+#mc38_object_list_rna_integrated_CD8 <- subset(mc38_object_list_rna_integrated,subset=CD8_CD4_Labels=="CD8_Positive")
+
+
+ref_cd4 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD4T_human_ref_v1.rds")
+ref_cd8 <- ProjecTILs::load.reference.map(ref = "/home/hhassan/annotation_refs_spica/CD8T_human_ref_v1.rds")
+refCols <- c("#edbe2a", "#A58AFF", "#53B400", "#F8766D", "#00B6EB", "#d1cfcc", "#FF0000", "#87f6a5", "#e812dd")
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3")
+
+#Load the required datatables:
+cell.cycle.obj <- ProjecTILs::cell.cycle.obj
+Hs2Mm.convert.table <- ProjecTILs::Hs2Mm.convert.table
+
+######Azimuth:
+InstallData("pbmcsca")
+pbmsca <- LoadData("pbmcsca")
+
+
+#################Labeling CD4 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD4) <- "RNA"
+query.projected.cd4 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD4, ref=ref_cd4, filter.cells = F) #This reduces the number of cells down to 12999. So you cannot merge the datasets!
+#query.projected.cd4 <- ProjecTILs::Run.ProjecTILs(NSLSC_object_list_rna_integrated_all, ref=ref_cd4)
+#Plot the projections:
+#ProjecTILs::plot.projection(ref_cd4, query.projected.cd4, linesize = 0.5, pointsize = 0.5)
+query.projected.cd4 <- ProjecTILs::cellstate.predict(ref=ref_cd4, query=query.projected.cd4)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL<- query.projected.cd4@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD4@meta.data$TILPRED_TIL_score <- query.projected.cd4@meta.data$functional.cluster.conf
+
+
+#################Labeling CD8 -------------------:
+DefaultAssay(mc38_object_list_rna_integrated_CD8) <- "RNA"
+query.projected.cd8 <- ProjecTILs::make.projection(mc38_object_list_rna_integrated_CD8, ref=ref_cd8, filter.cells = F) 
+#Plot the projections:
+query.projected.cd8 <- ProjecTILs::cellstate.predict(ref=ref_cd8, query=query.projected.cd8)
+#Now add this to the original dataset:
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL<- query.projected.cd8@meta.data$functional.cluster
+mc38_object_list_rna_integrated_CD8@meta.data$TILPRED_TIL_score <- query.projected.cd8@meta.data$functional.cluster.conf
+
+
+#Now Merge the objects back:
+mc38_object_list_rna_integrated_annotated<- merge(mc38_object_list_rna_integrated_CD8,mc38_object_list_rna_integrated_CD4, merge.data = TRUE)
+mc38_object_list_rna_integrated_annotated[["RNA_PCA"]] <- mc38_object_list_rna_integrated[["RNA_PCA"]]
+mc38_object_list_rna_integrated_annotated[["RNA_UMAP"]] <- mc38_object_list_rna_integrated[["RNA_UMAP"]]
+
+saveRDS(mc38_object_list_rna_integrated_annotated,"mc38_object_list_rna_integrated_annotated_SPICA.rds")
+
+####Find out if the cell barcodes carried over after merging:
+num = (intersect(as.vector(rownames(mc38_object_list_rna_integrated_CD4@meta.data)),
+          as.vector(rownames(mc38_object_list_rna_integrated_annotated@meta.data[
+            which(mc38_object_list_rna_integrated_annotated@meta.data$CD8_CD4_Labels=="CD4_Positive"),]))) %>% length()) / 
+              nrow(mc38_object_list_rna_integrated_CD4@meta.data)
+
+########Generating DimPlots
+##Change identity:
+mc38_object_list_rna_integrated_annotated_SPICA<- SetIdent(mc38_object_list_rna_integrated_annotated,
+                                                           value =mc38_object_list_rna_integrated_annotated@meta.data$TILPRED_TIL)
+###GENERATE UMAPs
+jpeg("UMAP_PLOT_SPICA_APRIL182024.jpeg",height=16,width=10,units="in",res=600)
+a<-ggplot(mc38_object_list_rna_integrated_annotated@meta.data,
+       aes(x =mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+           y = mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+           col = seurat_clusters)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+b<-ggplot(mc38_object_list_rna_integrated_annotated_SPICA@meta.data,
+          aes(x =mc38_object_list_rna_integrated_annotated_SPICA@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+              y = mc38_object_list_rna_integrated_annotated_SPICA@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+              col = TILPRED_TIL)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_SPICA@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+a/b
+dev.off()
+
+jpeg("UMAP_PLOT_CD4_CD8_APRIL182024.jpeg",height=4,width=6,units="in",res=600)
+a<-ggplot(mc38_object_list_rna_integrated_annotated@meta.data,
+          aes(x =mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+              y = mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+              col = CD8_CD4_Labels)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+a
+dev.off()
+
+#########################################################
+###################     AZIMUTH                         #
+#########################################################
+#run azimuth:
+mc38_object_list_rna_integrated_annotated<-RunAzimuth(mc38_object_list_rna_integrated_annotated,reference="pbmcref")
+####For some reason azimuth totally destroyed my dataset, so I will not be using this automated annotation!!! 
+
+#########################################################
+###################     GPT4/copilot/gemini                       #
+#########################################################
+library(GPTCelltype)
+library(openai)
+library(GPTCelltype)
+library(openai)
+Sys.setenv(OPENAI_API_KEY = [removed])
+
+#FIND MARKERS
+all.markers <- FindAllMarkers(object = mc38_object_list_rna_integrated_annotated)
+#all.markers<- FindAllMarkers(mc38_object_list_rna_integrated_annotated_manual_confirmed)
+
+##Run gpt4 negine
+res <- gptcelltype(all.markers, 
+                   tissuename = 'human PBMC', 
+                   model = 'gpt-3.5'
+)
+cat(res)
+######Prompt used:
+###For CD4:
+Identify effector, helper, effectors memory, Treg, exhausted, naive, comes, temra, pre-cursor exhausted OR other types of CD4+ T subsets using the following markers separately for each row. 
+Only provide the cell type name. Do not show numbers before the name.
+Some can be a mixture of multiple cell types. 
+
+12:Dusp10,Satb1,Ifngr2,Cd40lg,St8sia6,Ly6c1,Nkg7,Cd8b1,Cd8a,S1pr1
+14:Apoe,Cd74,Lyz2,H2-Ab1,H2-Eb1,Fcer1g,H2-Aa,C1qb,Tyrobp,C1qa
+15:Tcf4,Cd74,Siglech,Mef2c,Irf8,Tyrobp,Ly6d,Grm8,Cybb,Ccr9
+2:St8sia6,Lef1,Bach2,Igfbp4,Tgfbr3,Cd40lg,Ly6c1,Dgka,St6gal1,Aff3
+5:Rora,St6galnac3,Cd40lg,Il18r1,Hif1a,Cd4,Nebl,Tnfsf11,Nrp1,Tnfrsf4
+3:Ikzf2,Frmd5,Ctla4,Tnfrsf4,Itgav,Il2ra,Maf,Tnfrsf9,Sh3rf1,Icos
+
+
+###For CD8:
+Identify effector, helper, effectors memory, exhausted, naive, comes, pre-cursor exhausted OR other types of CD8+ T subsets using the following markers separately for each row. 
+Include Row number beside the cell type.
+Some can be a mixture of multiple cell types. 
+
+0:Gzma,Ccl5,S100a6,Ly6c2,Ctla2a,S100a4,Plac8,Gzmb,Nkg7,Lgals1
+1:Dapl1,Rplp1,Rpl36a,Rpl12,Rps3a1,Rps24,Auts2,Rps20,Rps27,Eef1b2
+4:Emb,Vps37b,Ssh2,Satb1,Gramd3,Txk,Sidt1,Ccr7,Fam241a,Rras2
+6:Hmgb2,Top2a,Stmn1,Mki67,Tubb5,Pclaf,Tuba1b,Ptma,Diaph3,Hist1h1b
+7:Ifit3,Ifit1,Isg15,Slfn5,Ifit2,Rsad2,Usp18,Rnf213,A330040F15Rik,Herc6
+8:Ccl4,Xcl1,Ccl1,Rgs16,Ifng,Ccl3,Ifitm1,Nr4a2,Gm36723,Tmem163
+9:Aff3,Fgf13,Cmah,Lef1,Ripor2,Foxp1,Auts2,Rapgef4,Zbtb20,Bach2
+10:Dennd4a,H3f3a,Pfdn5,Atp5l,Oaz1,Atp5h,Serf2,Cox7a2l,Cfl1,Atp5e
+11:Sidt1,Ifngas1,Fgf13,Cmah,Sell,Samd3,Aff3,Pde2a,Klf2,1700025G04Rik
+13:H2-D1,H3f3b,Srgn,B2m,Cd52,Tmsb4x,H2-K1,Eif1,Fau,Ubb
+###################################################################################
+
+###Attaching back the GPT4 labels:
+df <- data.frame(
+  Numbers = c(12, 14, 15, 2, 5, 3),
+  Cell_Types = c("Effector T cells",
+                 "Helper T cells",
+                 "Effector memory T cells (TEM)",
+                 "Naive T cells",
+                 "Th1 effector T cells",
+                 "T regulatory cells (Tregs)")
+)
+df_cd8 <- data.frame(
+  Numbers = c(0, 1, 4, 6, 7, 8, 9, 10, 11, 13),
+  Cell_Types = c("Effector T cells",
+                 "Naive T cells",
+                 "Effector memory T cells (TEM)",
+                 "Helper T cells",
+                 "Exhausted T cells",
+                 "Effector T cells",
+                 "TEMRA (Effector memory RA) T cells",
+                 "Central memory T cells (TCM)",
+                 "T regulatory cells (Tregs)",
+                 "Naive T cells")
+)
+
+df$Cell_Types <- paste0("CD4_",df$Cell_Types)
+df_cd8$Cell_Types <- paste0("CD8_",df_cd8$Cell_Types)
+df_gpt4<- rbind(df_cd8,df)
+#df$Numbers <- as.character(df_gpt4$Numbers)
+rownames(df_gpt4)<-as.character(df_gpt4$Numbers)
+
+mc38_object_list_rna_integrated_annotated@meta.data$celltype_GPT4_recheck <- df_gpt4$Cell_Types[match(
+        as.character(mc38_object_list_rna_integrated_annotated@meta.data$seurat_clusters),
+        as.character(df_gpt4$Numbers))]
+
+###Check the annotations are attached properly:
+cluster_4 <- data.frame(mc38_object_list_rna_integrated_annotated@meta.data[
+  which(mc38_object_list_rna_integrated_annotated@meta.data$seurat_clusters == "12"),])
+
+######ATTACHING GEMINI Labels:
+gdf_cd4 <- data.frame(
+  Numbers = c(12, 14, 15, 2, 5, 3),
+  Cell_Types = c("Effector memory (TEMRA) (possible mixture with effector T cells)",
+                 "Macrophage (not a CD4+ T cell subset)",
+                 "Th1 cell (possible mixture with Th2 cell)",
+                 "Treg",
+                 "Th17 cell",
+                 "Tregs (possible mixture with exhausted T cells)")
+)
+
+gdf_cd8 <- data.frame(
+  Numbers = c(0, 1, 4, 6, 7, 8, 9, 10, 11, 13),
+  Cell_Types = c("Effector, Memory (associated with effector function)",
+                 "Precursor (Markers indicate protein synthesis and cellular growth, characteristic of precursor cells before differentiation)",
+                 "Unknown (Markers are not typically associated with known CD8+ T cell subsets. May represent metabolically active cells)",
+                 "Proliferating cells (Markers associated with cell division and proliferation)",
+                 "Antiviral effector (All markers are induced by interferon signaling and involved in the antiviral response)",
+                 "Effector (Th1-like) (Chemokines associated with type 1 helper T cell (Th1) response)",
+                 "Regulatory T cell (Treg) (Markers characteristic of Tregs, a suppressive CD8+ T cell subset)",
+                 "Memory (Markers associated with mitochondrial function, important for memory T cell survival)",
+                 "Central memory (Tcm) and Effector memory (Tem) (Markers associated with memory T cells. Ifngas1 suggests potential effector function in some cells)",
+                 "Naive (Markers present on naive T cells before antigen encounter)")
+)
+
+# Remove items within parentheses using gsub
+gdf_cd8$Cell_Types <- gsub("\\([^\\)]+\\)", "", gdf_cd8$Cell_Types, perl = TRUE)
+
+gdf_cd4$Cell_Types <- paste0("CD4_",gdf_cd4$Cell_Types)
+gdf_cd8$Cell_Types <- paste0("CD8_",gdf_cd8$Cell_Types)
+df_gemini<- rbind(gdf_cd8,gdf_cd4)
+#df$Numbers <- as.character(df_gpt4$Numbers)
+rownames(df_gemini)<-df_gemini$Numbers
+
+##Now attach annotations back to dataframe:
+mc38_object_list_rna_integrated_annotated@meta.data$celltype_GEMINI_recheck <- df_gemini$Cell_Types[match(
+  as.character(mc38_object_list_rna_integrated_annotated@meta.data$seurat_clusters),
+  as.character(df_gemini$Numbers))]
+
+###Check the annotations are attached properly:
+cluster_4 <- data.frame(mc38_object_list_rna_integrated_annotated@meta.data[
+                which(mc38_object_list_rna_integrated_annotated@meta.data$seurat_clusters == "4"),])
+
+
+###GENERATE UMAPs
+jpeg("UMAP_PLOT_LLMs_APRIL182024.jpeg",height=16,width=14,units="in",res=600)
+a<-ggplot(mc38_object_list_rna_integrated_annotated@meta.data,
+          aes(x =mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+              y = mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+              col = celltype_GEMINI)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+b<-ggplot(mc38_object_list_rna_integrated_annotated@meta.data,
+          aes(x =mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+              y = mc38_object_list_rna_integrated_annotated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+              col = celltype_GPT4)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+a/b
+dev.off()
+
+
+############################################
+##GENERATING VISUALS
+############################################
+
+#Generate a dataframe with the scores and then plot them using ggplot2
+score_cd(mc38_object_list_rna_integrated_annotated)
+
+#Count cells:
+cell_cluster_number<- cell_cluster_count(mc38_object_list_rna_integrated_annotated)
+
+
+# Create the bar plot
+jpeg("Cell_count_annotated_cluster_SPICA_APRIL182024.jpeg",height=6,width=10,units="in",res=600)
+plot <- ggplot(cell_cluster_number, aes(x = labels, y = confidence_score, fill = labels)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Cell Count by Annotation", x = "Annotation", y = "Absolute Cell Count") +
+  geom_hline(yintercept = 200, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot
+dev.off()
+####################---ProjectTil AZIMUTH GPTs---####################
+saveRDS(mc38_object_list_rna_integrated_annotated,"mc38_object_list_rna_integrated_annotated.rds")
+
+
+###CD4
+data_mc38_scrnaseq_annotation_CD4 <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,mc38_object_list_rna_integrated_annotated@meta.data$TILPRED_TIL) %>% 
+                                    data.frame() %>%  filter(grepl("CD4",Var2))
+data_mc38_scrnaseq_annotation_CD4$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD4$Var1,"_",
+                                                  data_mc38_scrnaseq_annotation_CD4$Var2)
+
+
+###CD8 preparation
+data_mc38_scrnaseq_annotation_CD8 <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,mc38_object_list_rna_integrated_annotated@meta.data$TILPRED_TIL) %>% 
+  data.frame() %>%  filter(grepl("CD8",Var2))
+data_mc38_scrnaseq_annotation_CD8$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD8$Var1,"_",
+                                                  data_mc38_scrnaseq_annotation_CD8$Var2)
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD4.jpeg",height=4,width=12,units="in",res=600)
+ggplot(data_mc38_scrnaseq_annotation_CD4, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_SPICA_CD8.jpeg",height=4,width=12,units="in",res=600)
+ggplot(data_mc38_scrnaseq_annotation_CD8, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+#############################################
+#####LLMS CELL POPULATION BAR GRAPHS
+#############################################
+#####For LLMs: GPT4:
+###CD4
+data_mc38_scrnaseq_annotation_CD4_gpt4 <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,
+                                                mc38_object_list_rna_integrated_annotated@meta.data$celltype_GPT4) %>% 
+  data.frame() %>%  filter(grepl("CD4",Var2))
+data_mc38_scrnaseq_annotation_CD4_gpt4$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD4_gpt4$Var1,"_",
+                                                       data_mc38_scrnaseq_annotation_CD4_gpt4$Var2)
+
+
+###CD8 preparation
+data_mc38_scrnaseq_annotation_CD8_gpt4 <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,
+                                                mc38_object_list_rna_integrated_annotated@meta.data$celltype_GPT4) %>% 
+  data.frame() %>%  filter(grepl("CD8",Var2))
+data_mc38_scrnaseq_annotation_CD8_gpt4$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD8_gpt4$Var1,"_",
+                                                       data_mc38_scrnaseq_annotation_CD8_gpt4$Var2)
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_GPT4_CD4.jpeg",height=8,width=12,units="in",res=600)
+a<- ggplot(data_mc38_scrnaseq_annotation_CD4_gpt4, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+b<-ggplot(data_mc38_scrnaseq_annotation_CD8_gpt4, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+a/b
+dev.off()
+
+#####For LLMs: GEMINI:
+###CD4
+data_mc38_scrnaseq_annotation_CD4_gemini <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,
+                                                  mc38_object_list_rna_integrated_annotated@meta.data$celltype_GEMINI) %>% 
+  data.frame() %>%  filter(grepl("CD4",Var2))
+data_mc38_scrnaseq_annotation_CD4_gemini$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD4_gemini$Var1,"_",
+                                                         data_mc38_scrnaseq_annotation_CD4_gemini$Var2)
+
+
+###CD8 preparation
+data_mc38_scrnaseq_annotation_CD8_gemini <- table(mc38_object_list_rna_integrated_annotated@meta.data$Treatment,
+                                                  mc38_object_list_rna_integrated_annotated@meta.data$celltype_GEMINI) %>% 
+  data.frame() %>%  filter(grepl("CD8",Var2))
+data_mc38_scrnaseq_annotation_CD8_gemini$LABEL <- paste0(data_mc38_scrnaseq_annotation_CD8_gemini$Var1,"_",
+                                                         data_mc38_scrnaseq_annotation_CD8_gemini$Var2)
+
+
+jpeg("Absolute_cell_counts_MC38_annotation_gemini_CD4.jpeg",height=8,width=12,units="in",res=600)
+a<- ggplot(data_mc38_scrnaseq_annotation_CD4_gemini, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD4 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+b<-ggplot(data_mc38_scrnaseq_annotation_CD8_gemini, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells Remaining", title = "Cell Count By Annotation for CD8 T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+a/b
+dev.off()
+
+
+###################################################
+###Generating dataframe with Cell Annotations
+###################################################
+meta.data <- mc38_object_list_rna_integrated_annotated@meta.data %>% data.frame()
+
+metadata_subset <-  meta.data %>% select(c("seurat_clusters",
+                                           "celltype_GPT4",
+                                           "celltype_GEMINI"))
+metadata_subset_llms <- metadata_subset %>% unique()
+
+metadata_subset_2 <-  meta.data %>% select(c("seurat_clusters",
+                                             "CD8_CD4_Labels",
+                                             "Treatment", 
+                                             "TILPRED_TIL",
+                                             "TILPRED_TIL_score",
+                                              "celltype_GPT4_recheck",
+                                              "celltype_GEMINI_recheck"))
+
+
+write.table(metadata_subset_llms,"metadata_subset_llms.csv",sep=",")
+write.table(metadata_subset_2,"metadata_subset_withLLMS.csv",sep=",")
+
+###################################################
+###################################################
+#################Manual Annotation
+###################################################
+###################################################
+####This is the dataframe with all of the annotations:
+mc38_object_list_rna_integrated_annotated
+###This are teh objects where we are splitting by CD4 and CD8
+#mc38_object_list_rna_integrated_annotated <- readRDS("mc38_object_list_rna_integrated_annotated.rds")
+mc38_object_list_rna_integrated_annotated_cd4 <- subset(mc38_object_list_rna_integrated_annotated,subset=CD8_CD4_Labels=="CD4_Positive")
+mc38_object_list_rna_integrated_annotated_cd8 <- subset(mc38_object_list_rna_integrated_annotated,subset=CD8_CD4_Labels=="CD8_Positive")
+
+#################################################
+#################################################
+###Function:
+sum_values_by_key_auto <- function(data, key_column, value_column) {
+  result <- data %>%
+    group_by(across({{ key_column }})) %>%
+    summarise(Sum = mean({{ value_column }}))
+  return(result)
+}
+
+##### Gene markers:::----------------
+project_tils_markers <- c("Cd4","integrated_Cd8a","integrated_Ccr7","integrated_TCF7","integrated_PDCD1","integrated_HAVCR2","integrated_TOX","integrated_IZUMO1R","integrated_CXCR6","integrated_XCL1","integrated_GZMB","integrated_GZMK","integrated_IFNG","integrated_FOXP3")
+#IL7R is cd127; PECAM is CD31; 
+#Naive mine: PECAM is CD31,  IL7RA is CD127; CD122 is IL2RB; sell1 is CD62; naive are high for CCR7;SELL is CD62L, 
+genes_memory_naive_revisited <- c("Cd28", "Cd27", "Il7r", "CcR7", "Sell", "Il2rb", "Tcf7")
+#May have overlapping signatures based on just exhausted.
+genes_precursor_exhausted <- c("Pdcd1", "Cxcr5", "Lag3", "Gzmb", "Cd244")
+#HAVCR2 is TIM3; CD244 is 2B4; CD160 a marker of highly exhausted CD8+ T cells. TPEX are PDCD1+,CXCR5+,TCF1+,LAG3+,TIM3-,2B4-,GZMB-. Transcript,ional regulator of Tcell exhaustion (TOX)
+genes_exhausted <- c("Pdcd1", "Lag3", "Havcr2", "Cd160", "Ctla4", "Btla4")
+#Distinguish EM vs EFF based on signatures
+##CD25 is IL2RA; CD127 is IL7RA; TEM are CD25/IL2RA-, CD127/IL7RA+, CD45RO+/CD45RA-; EFF are CD25/IL2RA+, CD45RA+, CD127/IL7RA-. According to another, TEM are suppose to be CD127-/IL7R-
+genes_effector_mine <- c("Il2ra", "Gzmk", "Ccr7", "Gzma", "Prf1", "Ifng", "Lamp1")
+#Just two for Tregs
+genes_treg <- c("Foxp3")
+
+
+##### Gene markers:::SEB:::----------------
+markers <- c("Cd4","Cd8a","Ccr7","Tcf7","Pdcd1","Havcr2","Tox","Izumo1r","Cxcr6","Xcl1","Gzmb","Gzmk","Ifng","Foxp3","Cd160")
+genes2check <- c("Cd8a", "Cd8b1", "Gzmk", "Gzmb", "Cd69", "Ccr7", "Sell",  "Ifng","Cd4", "Itgae","Cx3cr1", "Ctla4", "Lag3", "Pdcd1", "Cxcr6",  "Cd14","Btla")
+
+########CELL POPULATIONS FROM SEB:
+##CD4_treg, 
+#CD4_CM	
+#CD4_Effector	
+#CD4_Effector_Memory	
+#CD4_Precursor_Exhausted	
+#CD4_T_helper	
+#CD4_Treg	
+#CD8_Effector	
+#CD8_Exhauted	
+#CD8_Effector_Memory	
+#CD8_Exhausted	
+#CD8_Memory_Exhausted	
+#CD8_Naive_CM	
+#CD8_Precursor_Exhausted
+#Other
+
+
+------------------------------------------------------------------------------
+  #Now annotating CD4 T cells---------------------------------------
+------------------------------------------------------------------------------
+  
+# 12:Dusp10,Satb1,Ifngr2,Cd40lg,St8sia6,Ly6c1,Nkg7,Cd8b1,Cd8a,S1pr1
+# 14:Apoe,Cd74,Lyz2,H2-Ab1,H2-Eb1,Fcer1g,H2-Aa,C1qb,Tyrobp,C1qa
+# 15:Tcf4,Cd74,Siglech,Mef2c,Irf8,Tyrobp,Ly6d,Grm8,Cybb,Ccr9
+# 2:St8sia6,Lef1,Bach2,Igfbp4,Tgfbr3,Cd40lg,Ly6c1,Dgka,St6gal1,Aff3
+# 5:Rora,St6galnac3,Cd40lg,Il18r1,Hif1a,Cd4,Nebl,Tnfsf11,Nrp1,Tnfrsf4
+# 3:Ikzf2,Frmd5,Ctla4,Tnfrsf4,Itgav,Il2ra,Maf,Tnfrsf9,Sh3rf1,Icos
+  
+#3: TREG, Foxp3+, GPTs all say Tregs. 
+#2: Naive, High in Cd28, Cd27, IL7R, Sell, TCF7; High score by SPICA, Both GPTs said Naive. 
+#12: effector T cells. High in CCR7. High score by Spica for CTL_EOMES. Both GPTs said effector T cells. 
+#5: TH17. High spica score for TH17, and both GPTs said its T-helper cell. 
+#14: Highest score for exhausted by SPICA. High in Havcr2.
+#15: Other. Didn't get high scores for any specific cell type by SPICA. GPTs didn't agree on any particular annotation. 
+  
+cluster_2 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "2"),])
+cluster_2_keyresult <- sum_values_by_key_auto(cluster_2,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_2$celltype_GPT4_recheck,cluster_2$celltype_GEMINI_recheck)
+
+cluster_12 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "12"),])
+cluster_12_keyresult <- sum_values_by_key_auto(cluster_12,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_12$celltype_GPT4_recheck,cluster_12$celltype_GEMINI_recheck)
+
+cluster_5 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "5"),])
+cluster_5_keyresult <- sum_values_by_key_auto(cluster_5,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_5$celltype_GPT4_recheck,cluster_5$celltype_GEMINI_recheck)
+
+cluster_14 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "14"),])
+cluster_14_keyresult <- sum_values_by_key_auto(cluster_14,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_14$celltype_GPT4_recheck,cluster_14$celltype_GEMINI_recheck)
+
+
+cluster_15 <- data.frame(mc38_object_list_rna_integrated_annotated_cd4@meta.data[which(mc38_object_list_rna_integrated_annotated_cd4@meta.data$seurat_clusters == "15"),])
+cluster_15_keyresult <- sum_values_by_key_auto(cluster_15,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_15$celltype_GPT4_recheck,cluster_15$celltype_GEMINI_recheck)
+
+##Now Attaching labels
+mc38_object_list_rna_integrated_annotated_cd4@meta.data$Annotations_New <- ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "3", "CD4_Treg",
+                                                                                  ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "2", "Naive",
+                                                                                         ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "15","Other",
+                                                                                                ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "12","CD4_Effector",
+                                                                                                       ifelse(mc38_object_list_rna_integrated_annotated_cd4$seurat_clusters == "14","CD4_Exhausted",
+                                                                                                              "Other")))))
+
+
+
+
+jpeg("Vlnplot_cd4_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+e= VlnPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_treg,stack=FALSE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d|e
+dev.off()
+
+jpeg("DotPlot_cd4_all_markers.jpeg",height=4,width=20,units="in",res=600)
+a=DotPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_memory_naive_revisited,group.by="seurat_clusters",cols=c25)+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+b=DotPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_precursor_exhausted,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+c=DotPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_exhausted,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+d= DotPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_effector_mine,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+e= DotPlot(mc38_object_list_rna_integrated_annotated_cd4,features=genes_treg,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+a|b|c|d|e
+dev.off()
+
+##UMAP of all
+jpeg("DimPlot_CD4_only.jpeg",height=6,width=24,units="in",res=600)
+a = DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="seurat_clusters",cols=c25)
+b=DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="TILPRED_TIL",cols=c25)
+c=DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="celltype_GPT4_recheck",cols=c25)
+d=DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="celltype_GEMINI",cols=c25)
+e=DimPlot(mc38_object_list_rna_integrated_annotated_cd4,group.by="Annotations_New",cols=c25)
+a | b| c / d |  e
+dev.off()
+
+------------------------------------------------------------------------------
+  #Now annotating CD8 T cells---------------------------------------
+------------------------------------------------------------------------------
+
+  
+#0:Effector Memory. High in Lamp1, Gzmk, Gzma, Il2ra. SPICA high score in EM. Both GPTs said effector or effector memory phenotype. 
+#1: Naive, High score by SPICA for NAIVE. GPT4 said Naive. High in CD27, IL7R, SELL, TCF7
+#10: CM, High in IL2RB, CD28, CD27. GPT4 said CM as well. 
+#11: Central Memory. High in CCR7 and IL7R/ CD127, SELL/ CD162. Also GPT4 said CM, SPICA high scores for CM. 
+#13: Naive. High SPICA score. Both GPTs said Naive. Low in expressin of all marker genes except Naive. 
+#4:Naive.High SPICA score for Naive. High in TCF7, CD28, CD27, SELL, IL7R. 
+#6:TPEX, high SPICA score for TPEX then Cluster 7, high in Gzmb, CTLA4, CD160. 
+#7:TEX, High in HAVCR2/TIM3, PDCD1, CTLA4, high score for TEX by SPICA, GPT said Exhausted. 
+#8:Exhausted, High in PDCD1, LAG3, TIM3, Highest score by SPICA for exhuasted phenotype
+#9: Naive. High in Naive markers SELL, CD27, CD28, TCF7,IL7R. Highest SPICA score for Naive. 
+
+  
+cluster_1 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "1"),])
+cluster_1_keyresult <- sum_values_by_key_auto(cluster_1,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_1$celltype_GPT4_recheck,cluster_1$celltype_GEMINI_recheck)
+
+
+cluster_0 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "0"),])
+cluster_0_keyresult <- sum_values_by_key_auto(cluster_0,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_0$celltype_GPT4_recheck,cluster_0$celltype_GEMINI_recheck)
+
+cluster_10 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "10"),])
+cluster_10_keyresult <- sum_values_by_key_auto(cluster_10,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_10$celltype_GPT4_recheck,cluster_10$celltype_GEMINI_recheck)
+
+cluster_9 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "9"),])
+cluster_9_keyresult <- sum_values_by_key_auto(cluster_9,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_9$celltype_GPT4_recheck,cluster_9$celltype_GEMINI_recheck)
+
+cluster_8 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "8"),])
+cluster_8_keyresult <- sum_values_by_key_auto(cluster_8,TILPRED_TIL,TILPRED_TIL_score)
+table(cluster_8$celltype_GPT8_recheck,cluster_8$celltype_GEMINI_recheck)
+
+cluster_7 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "7"),])
+cluster_7_keyresult <- sum_values_by_key_auto(cluster_7,TILPRED_TIL,TILPRED_TIL_score)
+print(cluster_7$celltype_GPT7_recheck %>% unique())
+print(cluster_7$celltype_GEMINI_recheck %>% unique())
+
+cluster_6 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "6"),])
+cluster_6_keyresult <- sum_values_by_key_auto(cluster_6,TILPRED_TIL,TILPRED_TIL_score)
+cluster_6_keyresult
+print(cluster_6$celltype_GPT4_recheck %>% unique())
+print(cluster_6$celltype_GEMINI_recheck %>% unique())
+
+cluster_13 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "13"),])
+cluster_13_keyresult <- sum_values_by_key_auto(cluster_13,TILPRED_TIL,TILPRED_TIL_score)
+cluster_13_keyresult
+print(cluster_13$celltype_GPT4_recheck %>% unique())
+print(cluster_13$celltype_GEMINI_recheck %>% unique())
+
+cluster_11 <- data.frame(mc38_object_list_rna_integrated_annotated_cd8@meta.data[which(mc38_object_list_rna_integrated_annotated_cd8@meta.data$seurat_clusters == "11"),])
+cluster_11_keyresult <- sum_values_by_key_auto(cluster_11,TILPRED_TIL,TILPRED_TIL_score)
+cluster_11_keyresult
+print(cluster_11$celltype_GPT4_recheck %>% unique())
+print(cluster_11$celltype_GEMINI_recheck %>% unique())
+
+####Annotate clusters:
+#0:Effector Memory. High in Lamp1, Gzmk, Gzma, Il2ra. SPICA high score in EM. Both GPTs said effector or effector memory phenotype. 
+#1: Naive, High score by SPICA for NAIVE. GPT4 said Naive. High in CD27, IL7R, SELL, TCF7
+#10: CM, High in IL2RB, CD28, CD27. GPT4 said CM as well. 
+#11: Central Memory. High in CCR7 and IL7R/ CD127, SELL/ CD162. Also GPT4 said CM, SPICA high scores for CM. 
+#13: Naive. High SPICA score. Both GPTs said Naive. Low in expressin of all marker genes except Naive. 
+#4:Naive.High SPICA score for Naive. High in TCF7, CD28, CD27, SELL, IL7R. 
+#6:TPEX, high SPICA score for TPEX then Cluster 7, high in Gzmb, CTLA4, CD160. 
+#7:TEX, High in HAVCR2/TIM3, PDCD1, CTLA4, high score for TEX by SPICA, GPT said Exhausted. 
+#8:Exhausted, High in PDCD1, LAG3, TIM3, Highest score by SPICA for exhuasted phenotype
+#9: Naive. High in Naive markers SELL, CD27, CD28, TCF7,IL7R. Highest SPICA score for Naive. 
+
+mc38_object_list_rna_integrated_annotated_cd8@meta.data$Annotations_New <- ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "0", "CD8_EM",
+                                                                                  ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "1" |
+                                                                                           mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "4" |
+                                                                                           mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "13" |
+                                                                                           mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "9", "CD8_Naive",
+                                                                                         ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "10" |
+                                                                                                  mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "11","CD8_CM",
+                                                                                                
+                                                                                                ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "7", "CD8_Exhausted_1",
+                                                                                                       ifelse(mc38_object_list_rna_integrated_annotated_cd8$seurat_clusters == "8", "CD8_Exhausted_2",
+                                                                                                    "CD8_PEX")))))
+
+##UMAP of all
+jpeg("DimPlot_CD8_only.jpeg",height=6,width=24,units="in",res=600)
+a = DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="seurat_clusters",cols=c25)
+b=DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="TILPRED_TIL",cols=c25)
+c=DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="celltype_GPT4_recheck",cols=c25)
+d=DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="celltype_GEMINI",cols=c25)
+e=DimPlot(mc38_object_list_rna_integrated_annotated_cd8,group.by="Annotations_New",cols=c25)
+a | b| c / d |  e
+dev.off()
+
+jpeg("DotPlot_cd8_all_markers.jpeg",height=4,width=24,units="in",res=600)
+a=DotPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_memory_naive_revisited,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Angle x-axis labels by 45 degrees
+b=DotPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_precursor_exhausted,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+c=DotPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_exhausted,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+d= DotPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_effector_mine,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+e= DotPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_treg,group.by="seurat_clusters",cols=c25) +  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+a|b|c|d|e
+dev.off()
+
+jpeg("Vlnplot_cd8_all_markers.jpeg",height=8,width=22,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_memory_naive_revisited,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+b=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_precursor_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+c=VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_exhausted,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+d= VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_effector_mine,stack=TRUE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+e= VlnPlot(mc38_object_list_rna_integrated_annotated_cd8,features=genes_treg,stack=FALSE,flip=TRUE,sort=TRUE,pt.size = 0,group.by="seurat_clusters") + NoLegend()
+a|b|c|d|e
+dev.off()
+
+
+
+########################################################################################
+########################################################################################
+######merge the objects:
+mc38_object_list_rna_integrated_annotated_manual_confirmed<- merge(mc38_object_list_rna_integrated_annotated_cd4,mc38_object_list_rna_integrated_annotated_cd8, merge.data = TRUE)
+mc38_object_list_rna_integrated_annotated_manual_confirmed[["RNA_PCA"]] <- mc38_object_list_rna_integrated_annotated[["RNA_PCA"]]
+mc38_object_list_rna_integrated_annotated_manual_confirmed[["RNA_UMAP"]] <- mc38_object_list_rna_integrated_annotated[["RNA_UMAP"]]
+
+###GENERATE UMAPs
+jpeg("UMAP_PLOT_Seurat Clusters_NEW_ANNOTATIONS_APRIL252024.jpeg",height=16,width=10,units="in",res=600)
+a<-ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+          aes(x =mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+              y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+              col = seurat_clusters)) +
+  geom_point(size = 0.30) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+# Create the plot without facet labels
+b <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+            aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+                col = Annotations_New)) +
+  geom_point(size = 0.30) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "New Annotations") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold"), strip.text = element_text(size = 20))
+
+# Count the rows for each facet
+facet_counts <- table(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+
+# Add facet labels with row counts
+b_with_labels <- b + labs(
+  title = "UMAP Plot with Cell Counts",
+  caption = paste("Cell Counts:", paste(names(facet_counts), facet_counts, sep = " - ", collapse = ", "))
+)
+
+a/b_with_labels
+dev.off()
+
+
+
+###CD8 preparation
+data_mc38_scrnaseq_annotation_<- table(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment,
+                                       mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Annotations_New) %>% 
+  data.frame() 
+data_mc38_scrnaseq_annotation_$LABEL <- paste0(data_mc38_scrnaseq_annotation_$Var1,"_",
+                                                         data_mc38_scrnaseq_annotation_$Var2)
+
+jpeg("Absolute_cell_counts_MC38_annotation_MANUAL_AUTO.jpeg",height=4,width=14,units="in",res=600)
+ggplot(data_mc38_scrnaseq_annotation_, aes(x = LABEL, y = Freq, fill = Var1)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  labs(x = "Treatment Status", y = "Number of Cells", title = "Cell Count By Annotation for T-Cells") +
+  geom_hline(yintercept = 100, linetype = "dashed", color = "red") +  # Add the horizontal line
+  geom_hline(yintercept = 500, linetype = "dashed", color = "green") +  # Add the horizontal line
+  geom_hline(yintercept = 1000, linetype = "dashed", color = "yellow") +  # Add the horizontal line
+  scale_color_manual(values = c25) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+dev.off()
+
+
+
+
+
+saveRDS(mc38_object_list_rna_integrated_annotated_manual_confirmed,"mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+
+
+####################################################
+####################################################
+####################################################
+######### Finalizing cell annotation and cluster 11 check.
+####################################################
+####################################################
+####This is the RDS object:
+mc38_object_list_rna_integrated_annotated_manual_confirmed <- readRDS("mc38_object_list_rna_integrated_annotated_manual_confirmed.rds")
+all.markers<- FindAllMarkers(mc38_object_list_rna_integrated_annotated_manual_confirmed)
+
+
+##Subsetting cluster 11:
+all.markers.cluster11 <- all.markers %>% dplyr::filter(cluster %in% "11")
+
+#Sort cluster 11:
+all.markers.cluster11 <- all.markers.cluster11[order(-all.markers.cluster11$avg_log2FC),]
+
+##Top 20 genes:
+all.markers.cluster11_top20 <- as.vector(as.character(all.markers.cluster11$gene[1:20]))
+
+##Find matches
+matches <- grepl("Ikzf2",mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data %>% row.names())
+print(rownames(mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data)[matches])
+
+###Markers of CD8 Tregs
+genes_effector_mine <- c("Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra5","Klra3")
+
+###Now generating violin plots
+jpeg("DotPlot_cd8_cluster11.jpeg",height=4,width=6,units="in",res=600)
+a=DotPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+          features=genes_effector_mine,
+          group.by="seurat_clusters",
+          cols=c25) +  
+            theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+a
+dev.off()
+
+jpeg("Vlnplot_cd8_cluster11.jpeg",height=8,width=6,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed,
+          features=genes_effector_mine,
+          stack=TRUE,
+          flip=TRUE,
+          sort=TRUE,
+          pt.size = 0,
+          group.by="seurat_clusters") + NoLegend()
+a
+dev.off()
+
+
+
+####################################################
+######### DATA IMPUTATION USING RMAGIC
+####################################################
+###Now perform data imputation:
+library(Rmagic)
+
+##Update path to python environment:
+Sys.setenv(RETICULATE_PYTHON = "/home/hhassan/.virtualenvs/r-reticulate/bin/python")
+library(reticulate)
+#detach("package:Rmagic", unload = TRUE)
+
+#install scipy:
+reticulate::py_install("magic-impute")
+reticulate::py_install("scipy")
+
+#Check:
+reticulate::py_run_string("import scipy")
+
+#Check python configuration:
+py_config()
+################################This works
+#python:         /home/hhassan/.virtualenvs/r-reticulate/bin/python
+#libpython:      /home/hhassan/.pyenv/versions/3.8.19/lib/libpython3.8.so
+#pythonhome:     /home/hhassan/.virtualenvs/r-reticulate:/home/hhassan/.virtualenvs/r-reticulate
+#version:        3.8.19 (default, May  1 2024, 23:59:35)  [GCC 11.4.0]
+#numpy:          /home/hhassan/.virtualenvs/r-reticulate/lib/python3.8/site-packages/numpy
+#numpy_version:  1.24.4
+#magic:          /home/hhassan/.virtualenvs/r-reticulate/lib/python3.8/site-packages/magic
+
+#NOTE: Python version was forced by RETICULATE_PYTHON
+############################################
+##Find matches
+matches <- grepl("Tbr2",mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$RNA@data %>% row.names())
+print(rownames(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$RNA@data)[matches])
+
+###Markers of CD8 Tregs
+genes_effector_mine <- c("Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra7","Klra3","Klra9","Tcf1","Tbx21","Nfatc2","Prdm1","Nr4a1","Tox")
+
+
+#Now run imputation:
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed <- Rmagic::magic(mc38_object_list_rna_integrated_annotated_manual_confirmed, 
+                                                                                    seed = 1234,
+                                                                                    verbose = T,
+                                                                                    npca = 40,
+                                                                                    solver = "approximate")
+
+#saveRDS(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,"mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed.rds")
+
+########################################################################################
+#mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed<- readRDS("mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed.rds")
+
+##Set default assay to magic RNA
+DefaultAssay(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed)<-"MAGIC_RNA"
+
+
+###Now generating violin plots
+jpeg("DotPlot_cd8_cluster11_imputed.jpeg",height=4,width=6,units="in",res=600)
+a=DotPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,
+          features=genes_effector_mine,
+          group.by="seurat_clusters",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+a
+dev.off()
+
+jpeg("Vlnplot_cd8_cluster11_imputed.jpeg",height=8,width=6,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,
+          features=genes_effector_mine,
+          stack=TRUE,
+          flip=TRUE,
+          sort=TRUE,
+          pt.size = 0,
+          group.by="seurat_clusters") + NoLegend()
+a
+dev.off()
+
+###########################################################################
+###This dataframe is looking at imputed vs normal RNA expression values, so may not be important 
+###########################################################################
+
+###Generate a dataframe with imputed counts and original values for scatter plot generation:
+###Look at only cluster 11
+cluster11_cells <- which(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters %in% c("11"))
+df_4_cor <- data.frame(cbind(t(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data[c("Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra5","Klra3"),cluster11_cells]),
+                             t(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$SCT@data[c("Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra5","Klra3"),cluster11_cells])))
+colnames(df_4_cor) <- c("Foxp1_imputed", "Foxp3_imputed","Aff3_imputed","Il2rb_imputed","Ikzf2_imputed","Klra6_imputed","Klra1_imputed","Klra5_imputed","Klra3_imputed",
+                        "Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra5","Klra3")
+
+
+####Now comparing original vs imputed counts:
+####Rearranging dataframe:
+# List of column names for *_imputed pairs
+imputed_columns <- grep("_imputed$", colnames(df_4_cor), value = TRUE)
+
+##Grouping dataframes based on grouping:
+# Identify columns matching the pattern
+pattern <- ".*_imputed$"
+matching_columns <- grep(pattern, colnames(df_4_cor), value = TRUE)
+
+# Group the columns
+grouped_columns <- lapply(matching_columns, function(col) {
+  col_without_suffix <- sub("_imputed$", "", col)
+  matching_cols <- grep(paste0("^", col_without_suffix), colnames(df_4_cor))
+  return(matching_cols)
+})
+
+rearranged_df <- df_4_cor[, unlist(grouped_columns)]
+
+
+###Generating scatterplots
+jpeg("scatterplot_IMPUTED_all_markers.jpeg",height=8,width=12,units="in",res=600)
+plots <- lapply(imputed_columns, function(col) {
+  ggplot(rearranged_df, aes_string(x = col, y = sub("_imputed$", "", col))) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE, color = "blue") +  # Add trend line
+    #stat_poly_eq(formula = y ~ x, aes(label = paste(..eq.label.., sep = "~~~~")), parse = TRUE) +  # Add equation and R-squared value
+    #geom_text(data = df_4_cor, aes_string(label = paste0("R2: ", round(summary(lm(sub("_imputed$", "", col) ~ ., data = df_4_cor))$r.squared, 2))), hjust = -0.1, vjust = 1) +
+    
+    labs(x = col, y = sub("_imputed$", "", col)) +
+    theme_minimal()
+})
+combined_plots <- plots[[1]]
+for (i in 2:length(plots)) {
+  combined_plots <- combined_plots + plots[[i]]
+}
+# Print the combined plots
+print(combined_plots)
+dev.off()
+
+
+###Now generating box plots:
+df_long <- tidyr::gather(data = rearranged_df, key = "Marker", value = "Value")
+
+jpeg("BOXPLOTS_IMPUTED_all_markers.jpeg",height=6,width=10,units="in",res=600)
+p <- ggplot(df_long, aes(x = Marker, y = Value)) +
+  geom_boxplot() +
+  labs(x = "Genes", y = "Normalized Expression") +  # Add x-axis and y-axis titles 
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = margin(1, 1, 1, 4, "cm"))  # Angle x-axis labels at 45 degrees
+p
+dev.off()
+
+
+
+###########################################################################
+###Scatter plots for imputed expression only against central memory markers
+####CLUSTER 11
+###########################################################################
+####################################################
+###Generate a dataframe with imputed counts for scatter plot generation:
+###Look at only cluster 11
+cluster11_cells <- which(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters %in% c("11"))
+scatter_df <- data.frame(t(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data[c("Sell","Ccr7", "Foxp3","Il2rb","Ikzf2","Klra6","Klra1","Klra7","Klra3","Klra9","Tbx21","Nfatc2","Prdm1","Nr4a1","Tox"),cluster11_cells]))
+scatter_df$CM <- ifelse(scatter_df$Ccr7 < 1.5 & scatter_df$Sell <2.5 & scatter_df$Foxp3 < 0.4 & scatter_df$Il2rb >=1.2,"Sell-CCR7-Cd122+","Sell+CCR7+Cd122-")
+scatter_df$Klra_Cd122_Ikzf2 <- ifelse(scatter_df$Klra6 >0.01 &
+                                        scatter_df$Klra1 > 0.01 &
+                                        scatter_df$Klra7 > 0.05 &
+                                        scatter_df$Klra3 > 0.05 &
+                                        scatter_df$Klra9 > 0.01 &
+                                        scatter_df$Ikzf2 > 1 &
+                                        scatter_df$Il2rb >=1.2,
+                                      "Klra+Ikzf2+Cd122+",
+                                      "Klra-Ikzf2-Cd122-")
+
+###Scatter plot with quadrant inforamtion. 
+jpeg("scatterplot_against_sell.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df, aes(x = Sell, y = !!sym(col))) +
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+
+###Scatter plot with quadrant inforamtion. 
+jpeg("scatterplot_against_Ccr7.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df, aes(x = Ccr7, y = !!sym(col))) +
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+####################################
+######Scatter plot with colors:
+####################################
+jpeg("scatterplot_against_sell_color_JONATHAN.jpeg", height = 8, width = 16, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df, aes(x = Sell, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+###CCR7
+jpeg("scatterplot_against_Ccr7_color_JONATHAN.jpeg", height = 8, width = 16, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df, aes(x = Ccr7, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7 (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+
+
+##########################################################################################
+######As per jonathan's request:
+##SCATTER PLOTS FOR CLUSTER 4 and 10 as well
+##########################################################################################
+
+######Cluster 4
+cluster4_cells <- which(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters %in% c("4"))
+scatter_df_4 <- data.frame(t(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data[c("Sell","Ccr7", "Foxp3","Il2rb","Ikzf2","Klra6","Klra1","Klra7","Klra3","Klra9","Tbx21","Nfatc2","Prdm1","Nr4a1","Tox"),cluster4_cells]))
+scatter_df_4$CM <-ifelse(scatter_df_4$Ccr7 < 1.5 & scatter_df_4$Sell <2.5 & scatter_df_4$Foxp3 < 0.4 & scatter_df_4$Il2rb >=1.2,"Sell-CCR7-Cd122+","Sell+CCR7+Cd122-")
+scatter_df_4$Klra_Cd122_Ikzf2 <- ifelse(scatter_df_4$Klra6 >0.01 &
+                                          scatter_df_4$Klra1 > 0.01 &
+                                          scatter_df_4$Klra7 > 0.05 &
+                                          scatter_df_4$Klra3 > 0.05 &
+                                          scatter_df_4$Klra9 > 0.01 &
+                                          scatter_df_4$Ikzf2 > 1 &
+                                          scatter_df_4$Il2rb >=1.2,
+                                        "Klra+Ikzf2+Cd122+",
+                                        "Klra-Ikzf2-Cd122-")
+
+jpeg("scatterplot_against_sell_CLUSTER4.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_4)[-which(names(scatter_df_4) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_4$Sell > median(scatter_df_4$Sell) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q2 <- sum(scatter_df_4$Sell <= median(scatter_df_4$Sell) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q3 <- sum(scatter_df_4$Sell <= median(scatter_df_4$Sell) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  q4 <- sum(scatter_df_4$Sell > median(scatter_df_4$Sell) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_4, aes(x = Sell, y = !!sym(col))) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_4[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_4$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+###CCR7
+jpeg("scatterplot_against_Ccr7_CLUSTER4.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_4)[-which(names(scatter_df_4) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_4$Ccr7 > median(scatter_df_4$Ccr7) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q2 <- sum(scatter_df_4$Ccr7 <= median(scatter_df_4$Ccr7) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q3 <- sum(scatter_df_4$Ccr7 <= median(scatter_df_4$Ccr7) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  q4 <- sum(scatter_df_4$Ccr7 > median(scatter_df_4$Ccr7) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_4, aes(x = Ccr7, y = !!sym(col))) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_4[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_4$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7 (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+####################################
+######Scatter plot with colors:
+####################################
+jpeg("scatterplot_against_sell_CLUSTER4_color_JONATHAN.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_4)[-which(names(scatter_df_4) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_4$Sell > median(scatter_df_4$Sell) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q2 <- sum(scatter_df_4$Sell <= median(scatter_df_4$Sell) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q3 <- sum(scatter_df_4$Sell <= median(scatter_df_4$Sell) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  q4 <- sum(scatter_df_4$Sell > median(scatter_df_4$Sell) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_4, aes(x = Sell, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_4[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_4$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+###CCR7
+jpeg("scatterplot_against_Ccr7_CLUSTER4_color_JONATHAN.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_4)[-which(names(scatter_df_4) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_4$Ccr7 > median(scatter_df_4$Ccr7) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q2 <- sum(scatter_df_4$Ccr7 <= median(scatter_df_4$Ccr7) & scatter_df_4[[col]] > median(scatter_df_4[[col]]))
+  q3 <- sum(scatter_df_4$Ccr7 <= median(scatter_df_4$Ccr7) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  q4 <- sum(scatter_df_4$Ccr7 > median(scatter_df_4$Ccr7) & scatter_df_4[[col]] <= median(scatter_df_4[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_4, aes(x = Ccr7, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_4[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_4$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7 (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+
+##################
+######Cluster 10
+##################
+cluster10_cells <- which(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters %in% c("10"))
+scatter_df_10 <- data.frame(t(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data[c("Sell","Ccr7", "Foxp3","Il2rb","Ikzf2","Klra6","Klra1","Klra7","Klra3","Klra9","Tbx21","Nfatc2","Prdm1","Nr4a1","Tox"),cluster10_cells]))
+scatter_df_10$CM <-ifelse(scatter_df_10$Ccr7 < 1.5 & scatter_df_10$Sell <2.5 & scatter_df_10$Foxp3 < 0.4 & scatter_df_10$Il2rb >=1.2,"Sell-CCR7-Cd122+","Sell+CCR7+Cd122-")
+scatter_df_10$Klra_Cd122_Ikzf2 <- ifelse(scatter_df_10$Klra6 >0.01 &
+                                           scatter_df_10$Klra1 > 0.01 &
+                                           scatter_df_10$Klra7 > 0.05 &
+                                           scatter_df_10$Klra3 > 0.05 &
+                                           scatter_df_10$Klra9 > 0.01 &
+                                           scatter_df_10$Ikzf2 > 1 &
+                                           scatter_df_10$Il2rb >=1.2,
+                                         "Klra+Ikzf2+Cd122+",
+                                         "Klra-Ikzf2-Cd122-")
+jpeg("scatterplot_against_sell_cluster10.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_10)[-which(names(scatter_df_10) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_10$Sell > median(scatter_df_10$Sell) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q2 <- sum(scatter_df_10$Sell <= median(scatter_df_10$Sell) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q3 <- sum(scatter_df_10$Sell <= median(scatter_df_10$Sell) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  q4 <- sum(scatter_df_10$Sell > median(scatter_df_10$Sell) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_10, aes(x = Sell, y = !!sym(col))) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_10[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_10$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+###CCR7
+jpeg("scatterplot_against_Ccr7_cluster10.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_10)[-which(names(scatter_df_10) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_10$Ccr7 > median(scatter_df_10$Ccr7) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q2 <- sum(scatter_df_10$Ccr7 <= median(scatter_df_10$Ccr7) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q3 <- sum(scatter_df_10$Ccr7 <= median(scatter_df_10$Ccr7) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  q4 <- sum(scatter_df_10$Ccr7 > median(scatter_df_10$Ccr7) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_10, aes(x = Ccr7, y = !!sym(col))) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_10[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_10$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7 (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+####################################
+######Scatter plot with colors:d
+####################################
+jpeg("scatterplot_against_sell_cluster10_color_JONATHAN.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_10)[-which(names(scatter_df_10) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_10$Sell > median(scatter_df_10$Sell) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q2 <- sum(scatter_df_10$Sell <= median(scatter_df_10$Sell) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q3 <- sum(scatter_df_10$Sell <= median(scatter_df_10$Sell) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  q4 <- sum(scatter_df_10$Sell > median(scatter_df_10$Sell) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_10, aes(x = Sell, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_10[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_10$Sell), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Sell (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+###CCR7
+jpeg("scatterplot_against_Ccr7_cluster10_color_JONATHAN.jpeg", height = 8, width = 12, units = "in", res = 600)
+# Create a list to store scatter plots
+scatter_plots <- list()
+
+# Loop through each column to create scatter plots
+for (col in colnames(scatter_df_10)[-which(names(scatter_df_10) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df_10$Ccr7 > median(scatter_df_10$Ccr7) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q2 <- sum(scatter_df_10$Ccr7 <= median(scatter_df_10$Ccr7) & scatter_df_10[[col]] > median(scatter_df_10[[col]]))
+  q3 <- sum(scatter_df_10$Ccr7 <= median(scatter_df_10$Ccr7) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  q4 <- sum(scatter_df_10$Ccr7 > median(scatter_df_10$Ccr7) & scatter_df_10[[col]] <= median(scatter_df_10[[col]]))
+  
+  # Create scatter plot
+  scatter_plot <- ggplot(scatter_df_10, aes(x = Ccr7, y = !!sym(col), color = Klra_Cd122_Ikzf2)) +  # Add color = Klra_Cd122_Ikzf2 here
+    geom_point(cex=0.2) +
+    geom_hline(yintercept = median(scatter_df_10[[col]]), color = "red", linetype = "dashed") +  # Add horizontal line at y midpoint
+    geom_vline(xintercept = median(scatter_df_10$Ccr7), color = "blue", linetype = "dashed") +  # Add vertical line at x midpoint
+    labs(x = "Ccr7 (Cd62l)", y = col) +
+    ggtitle(paste("Scatter plot of", col, "\nQ1:", q1, " Q2:", q2, "\nQ3:", q3, " Q4:", q4)) +  # Include quadrant info in title with two lines
+    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          panel.background = element_rect(fill = "white"))
+  
+  # Add scatter plot to list
+  scatter_plots[[col]] <- scatter_plot
+}
+
+# Plot all scatter plots together with quadrant lines
+multiplot <- cowplot::plot_grid(plotlist = scatter_plots, nrow = 4)
+multiplot
+dev.off()
+
+
+##########################################################################################
+######Do a feature plot with CD8Treg T cells labelled:
+##########################################################################################
+#Now add the cd8treg genes into the dataframe
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Sell <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Sell",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Ccr7 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Ccr7",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Foxp3 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Foxp3",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Il2rb <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Il2rb",]
+
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Cluster11_tregs <- ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Ccr7 <= 1.5 & 
+                                                                                                         mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Sell <=2.5 &
+                                                                                                         mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Foxp3 < 0.4 & 
+                                                                                                         mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Il2rb >=1.2 &
+                                                                                                         mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters== "11" | 
+                                                                                                         mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters== "4",
+                                                                                                         "CM-",
+                                                                                                          "CM+")
+
+#Make a feature plot using GGPLOT2
+#mc38_object_list_rna_integrated$diff <- scales::rescale(mc38_object_list_rna_integrated$Trvb5_13_2_3, to = c(0,1))
+#hist(mc38_object_list_rna_integrated$diff)
+
+############################ 
+############################ 
+##############Cluster 11 and cluster 4 tregs
+jpeg("FEATUREPLOT_cluster11_clustert4_treg_markers_mc38.jpeg",height=4,width=5,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=Cluster11_tregs)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed$Cluster11_tregs =="CM+", "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  #facet_wrap(~ mc38_object_list_rna_integrated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+dev.off()
+
+jpeg("FEATUREPLOT_cluster11_clustert4_treg_markers_mc38_facetwrap.jpeg",height=10,width=12,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data,
+       aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=Cluster11_tregs)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed$Cluster11_tregs =="CM+", "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+dev.off()
+
+
+##########DATA FRAME GENERATION WITH QUADRANT COUNTS:
+#####Create a dataframe with quadrants for ccr7:
+quadrant_df <- data.frame(matrix(NA, nrow = length(colnames(scatter_df))-1, ncol = 4))
+colnames(quadrant_df) <- paste("Q", 1:4, sep = "")
+rownames(quadrant_df) <- colnames(scatter_df)[-which(names(scatter_df) == "Ccr7")]
+
+# Loop through each column to calculate quadrant sizes and fill the dataframe
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Ccr7")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Ccr7 <= median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Ccr7 > median(scatter_df$Ccr7) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Fill the quadrant dataframe
+  quadrant_df[col, ] <- c(q1, q2, q3, q4)
+}
+
+
+#####Create a dataframe with quadrants for sell:
+quadrant_df_sell <- data.frame(matrix(NA, nrow = length(colnames(scatter_df))-1, ncol = 4))
+colnames(quadrant_df_sell) <- paste("Q", 1:4, sep = "")
+rownames(quadrant_df_sell) <- colnames(scatter_df)[-which(names(scatter_df) == "Sell")]
+
+# Loop through each column to calculate quadrant sizes and fill the dataframe
+for (col in colnames(scatter_df)[-which(names(scatter_df) == "Sell")]) {
+  # Calculate quadrant sizes
+  q1 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q2 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] > median(scatter_df[[col]]))
+  q3 <- sum(scatter_df$Sell <= median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  q4 <- sum(scatter_df$Sell > median(scatter_df$Sell) & scatter_df[[col]] <= median(scatter_df[[col]]))
+  
+  # Fill the quadrant dataframe
+  quadrant_df_sell[col, ] <- c(q1, q2, q3, q4)
+}
+
+
+
+####################################################
+######### Dot plot and scatter plot with only cluster 11 and 4. 
+####################################################
+#Now add the cd8treg genes into the dataframe
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Sell <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Sell",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Ccr7 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Ccr7",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Foxp3 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Foxp3",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Il2rb <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Il2rb",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Klra1 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Klra1",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Klra3 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Klra3",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Klra6 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Klra6",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Klra7 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Klra7",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Klra9 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Klra9",]
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Ikzf2 <- mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@assays$MAGIC_RNA@data["Ikzf2",]
+
+##subsets
+mc38_cluster11_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="11")
+mc38_cluster4_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="4")
+mc38_cluster10_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="10")
+
+
+mc38_cluster11_only@meta.data$Cluster11_tregs <- ifelse(mc38_cluster11_only@meta.data$Ccr7 <= 1.5 & 
+                                                          mc38_cluster11_only@meta.data$Sell <=2.5 &
+                                                          mc38_cluster11_only@meta.data$Foxp3 < 0.4 & 
+                                                          mc38_cluster11_only@meta.data$Il2rb >=1.2,
+                                                        "Sell-Ccr7-Cd122+",
+                                                        "Sell+Ccr7+Cd122-")
+
+mc38_cluster11_only$Jonathan_suggestion <-  ifelse(mc38_cluster11_only@meta.data$Klra6 > 0.01 & 
+                                                     mc38_cluster11_only@meta.data$Klra1 >0.01 &
+                                                     mc38_cluster11_only@meta.data$Klra7 >0.05 &
+                                                     mc38_cluster11_only@meta.data$Klra3 >0.05 &
+                                                     mc38_cluster11_only@meta.data$Klra9 >0.01 &
+                                                     mc38_cluster11_only@meta.data$Ikzf2 > 1 &
+                                                     mc38_cluster11_only@meta.data$Il2rb >=1.2,
+                                                   "Klra+Ikzf2+Cd122+",
+                                                   "Klra-Ikzf2-Cd122-")
+
+##cluster 4:
+mc38_cluster4_only@meta.data$Cluster4_tregs <- ifelse(mc38_cluster4_only@meta.data$Ccr7 <= 1.5 & 
+                                                        mc38_cluster4_only@meta.data$Sell <=2.5 &
+                                                        mc38_cluster4_only@meta.data$Foxp3 < 0.4 & 
+                                                        mc38_cluster4_only@meta.data$Il2rb >=1.2,
+                                                      "Sell-Ccr7-Cd122+",
+                                                      "Sell+Ccr7+Cd122-")
+mc38_cluster4_only$Jonathan_suggestion <-  ifelse(mc38_cluster4_only@meta.data$Klra6 > 0.01 & 
+                                                    mc38_cluster4_only@meta.data$Klra1 >0.01 &
+                                                    mc38_cluster4_only@meta.data$Klra7 >0.05 &
+                                                    mc38_cluster4_only@meta.data$Klra3 >0.05 &
+                                                    mc38_cluster4_only@meta.data$Klra9 >0.01 &
+                                                    mc38_cluster4_only@meta.data$Ikzf2 > 1 &
+                                                    mc38_cluster4_only@meta.data$Il2rb >=1.2,
+                                                  "Klra+Ikzf2+Cd122+",
+                                                  "Klra-Ikzf2-Cd122-")
+
+#Cluster 10:
+mc38_cluster10_only@meta.data$Cluster10_tregs <- ifelse(mc38_cluster10_only@meta.data$Ccr7 <= 1.5 & 
+                                                          mc38_cluster10_only@meta.data$Sell <=2.5 &
+                                                          mc38_cluster10_only@meta.data$Foxp3 < 0.4 & 
+                                                          mc38_cluster10_only@meta.data$Il2rb >=1.2,
+                                                        "Sell-Ccr7-Cd122+",
+                                                        "Sell+Ccr7+Cd122-")
+mc38_cluster10_only$Jonathan_suggestion <-  ifelse(mc38_cluster10_only@meta.data$Klra6 > 0.01 & 
+                                                     mc38_cluster10_only@meta.data$Klra1 >0.01 &
+                                                     mc38_cluster10_only@meta.data$Klra7 >0.05 &
+                                                     mc38_cluster10_only@meta.data$Klra3 >0.05 &
+                                                     mc38_cluster10_only@meta.data$Klra9 >0.01 &
+                                                     mc38_cluster10_only@meta.data$Ikzf2 > 1 &
+                                                     mc38_cluster10_only@meta.data$Il2rb >=1.2,
+                                                   "Klra+Ikzf2+Cd122+",
+                                                   "Klra-Ikzf2-Cd122-")
+###genes to test for CD8 treg markers:
+genes_effector_mine <- c("Foxp1", "Foxp3","Aff3","Il2rb","Ikzf2","Klra6","Klra1","Klra7","Klra3","Klra9","Tcf1","Tbx21","Nfatc2","Prdm1","Nr4a1","Tox")
+
+##Set default assay to magic RNA
+DefaultAssay(mc38_cluster4_only)<-"MAGIC_RNA"
+DefaultAssay(mc38_cluster10_only)<-"MAGIC_RNA"
+DefaultAssay(mc38_cluster11_only)<-"MAGIC_RNA"
+
+###Now generating dot plots
+########This is with CD122, SELL, CCR7
+jpeg("DotPlot_cd8_cluster4_10_11_imputed.jpeg",height=4,width=22,units="in",res=600)
+a=DotPlot(mc38_cluster11_only,
+          features=genes_effector_mine,
+          group.by="Cluster11_tregs",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b=DotPlot(mc38_cluster4_only,
+          features=genes_effector_mine,
+          group.by="Cluster4_tregs",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+c=DotPlot(mc38_cluster10_only,
+          features=genes_effector_mine,
+          group.by="Cluster10_tregs",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+a | b | c
+dev.off()
+
+########This is with KLRA, CD122, IKZF2:
+jpeg("DotPlot_cd8_cluster4_10_11_imputed_JONATHANS_SUGGESTION.jpeg",height=4,width=22,units="in",res=600)
+a=DotPlot(mc38_cluster11_only,
+          features=genes_effector_mine,
+          group.by="Jonathan_suggestion",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b=DotPlot(mc38_cluster4_only,
+          features=genes_effector_mine,
+          group.by="Jonathan_suggestion",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+c=DotPlot(mc38_cluster10_only,
+          features=genes_effector_mine,
+          group.by="Jonathan_suggestion",
+          cols=c25) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+a | b | c
+dev.off()
+
+
+
+############################
+###BAR PLOTS OF CELL POPULATIONS
+############################
+
+mc38_cluster11_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="11")
+mc38_cluster4_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="4")
+mc38_cluster10_only <- subset(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed,subset=seurat_clusters=="10")
+
+
+
+cluster11_jonathan_suggestion<- table(mc38_cluster11_only@meta.data$Jonathan_suggestion) %>% data.frame()
+cluster10_jonathan_suggestion<- table(mc38_cluster10_only@meta.data$Jonathan_suggestion) %>% data.frame()
+cluster4_jonathan_suggestion<- table(mc38_cluster4_only@meta.data$Jonathan_suggestion) %>% data.frame()
+
+###Generate bar plots:
+# Create the bar plot
+jpeg("BarPlot_cluster10_imputed_JONATHANS_SUGGESTION.jpeg",height=6,width=8,units="in",res=600)
+a<- ggplot(cluster4_jonathan_suggestion, aes(x = Var1, y = Freq)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_text(aes(label = Freq), vjust = -0.5) +  # Add text labels on top
+  theme_minimal() +
+  labs(x = "Cell Type", y = "Cell count", title = "Cluster 4") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+b<-  ggplot(cluster10_jonathan_suggestion, aes(x = Var1, y = Freq)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_text(aes(label = Freq), vjust = -0.5) +  # Add text labels on top
+  theme_minimal() +
+  labs(x = "Cell Type", y = "Cell count", title = "Cluster 10") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+c<-  ggplot(cluster11_jonathan_suggestion, aes(x = Var1, y = Freq)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_text(aes(label = Freq), vjust = -0.5) +  # Add text labels on top
+  theme_minimal() +
+  labs(x = "Cell Type", y = "Cell count", title = "Cluster 11") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels if needed
+a | b | c
+dev.off()
+
+#############################################
+###Bar Plot by Treatment
+#############################################
+####Cluster 11:
+cluster11_jonathan_suggestion_TREATMENT <- mc38_cluster11_only@meta.data %>%
+  group_by(Jonathan_suggestion, Treatment) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = Treatment, values_from = count, values_fill = 0) %>%
+  as.data.frame()
+
+# Reshape the data from wide to long format
+data_long_cluster11 <- tidyr::gather(cluster11_jonathan_suggestion_TREATMENT, key = "Treatment", value = "Count", -Jonathan_suggestion)
+
+# Plot the bar plot
+jpeg("BarPlot_cluster11_imputed_JONATHANS_SUGGESTION_TREATMENT.jpeg",height=6,width=8,units="in",res=600)
+ggplot(data_long_cluster11, aes(x = Jonathan_suggestion, y = Count, fill = Treatment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Treatment Status", y = "Count", title = "Cell Counts By Treatment Status for Cluster 11 Cells") +
+  scale_fill_brewer(palette = "Set3") +  # Set color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+dev.off()
+
+
+####Cluster 4:
+cluster4_jonathan_suggestion_TREATMENT <- mc38_cluster4_only@meta.data %>%
+  group_by(Jonathan_suggestion, Treatment) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = Treatment, values_from = count, values_fill = 0) %>%
+  as.data.frame()
+
+# Reshape the data from wide to long format
+data_long_cluster4 <- tidyr::gather(cluster4_jonathan_suggestion_TREATMENT, key = "Treatment", value = "Count", -Jonathan_suggestion)
+
+# Plot the bar plot
+jpeg("BarPlot_cluster4_imputed_JONATHANS_SUGGESTION_TREATMENT.jpeg",height=6,width=8,units="in",res=600)
+ggplot(data_long_cluster4, aes(x = Jonathan_suggestion, y = Count, fill = Treatment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Treatment Status", y = "Count", title = "Cell Counts By Treatment Status for Cluster 4 Cells") +
+  scale_fill_brewer(palette = "Set3") +  # Set color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+dev.off()
+
+
+
+
+####Cluster 10:
+cluster10_jonathan_suggestion_TREATMENT <- mc38_cluster10_only@meta.data %>%
+  group_by(Jonathan_suggestion, Treatment) %>%
+  summarise(count = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = Treatment, values_from = count, values_fill = 0) %>%
+  as.data.frame()
+
+# Reshape the data from wide to long format
+data_long_cluster10 <- tidyr::gather(cluster10_jonathan_suggestion_TREATMENT, key = "Treatment", value = "Count", -Jonathan_suggestion)
+
+# Plot the bar plot
+jpeg("BarPlot_cluster10_imputed_JONATHANS_SUGGESTION_TREATMENT.jpeg",height=6,width=8,units="in",res=600)
+ggplot(data_long_cluster10, aes(x = Jonathan_suggestion, y = Count, fill = Treatment)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(x = "Treatment Status", y = "Count", title = "Cell Counts By Treatment Status for Cluster 10 Cells") +
+  scale_fill_brewer(palette = "Set3") +  # Set color palette
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate x-axis labels for better readability
+dev.off()
+
+
+cluster10_jonathan_suggestion<- table(mc38_cluster10_only@meta.data$Jonathan_suggestion) %>% data.frame()
+####################################################
+######### DATA IMPUTATION USING RMAGIC ::::: END! 
+####################################################
+
+
+
+
+####################################################
+######### updating ANNOTATIONS
+####################################################
+
+##Cluster 5: TH1 Helper
+#Cluster 12: Naive 2 
+#2: Naive 1
+#7: Effector. 
+
+#RDS OBECT: mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed
+
+mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Updated_Annotation <- ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters == "5","CD4_TH1_Helper",
+                                                                                                          ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters=="12","CD4_Naive_2",
+                                                                                                                 ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters=="2","CD4_Naive_1",
+                                                                                                                        ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters==7,"CD8_Effector",
+                                                                                                                               ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters=="4","CD8_CM",
+                                                                                                                                      ifelse(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$seurat_clusters=="11","11",
+                                                                                                                                             mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Annotations_New))))))
+
+
+
+
+####################################################
+######### DENSITY PLOT ::: HIGH PRIOIRTY FOR JONATHAN 
+####################################################
+
+jpeg("UMAP_withcell_DENSITY_MC38_MODEL_geom_density_2d_anothertry.jpeg", height = 5, width = 12, units = "in", res = 600)
+UMAP <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data,
+               aes(x =mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                   y = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+                   col = Updated_Annotation)) +
+  geom_point(size = 0.4) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Updated Annotations") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+p1 <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data,
+             aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.45,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",alpha= 0.8,contour=T, h = 3.21) +  # Adjusted h value
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+# Count the rows for each facet
+counts <- table(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Treatment) %>% data.frame()
+counts$annotation <- paste0(counts$Var1,":",counts$Freq)
+
+
+# Add facet labels with row counts
+p1_with_labels <- p1 + labs(
+  title = "UMAP Density Plot",
+  caption = paste("Cell Counts:", paste(counts$annotation, sep = " - ", collapse = ", "))
+)
+
+UMAP | p1_with_labels
+
+dev.off()
+
+###Density plot with UMAP removed
+jpeg("UMAP_just_DENSITY_MC38_MODEL_geom_density_2d_5.jpeg", height = 5, width = 6, units = "in", res = 600)
+
+p1 <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data,
+             aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.45,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",alpha= 0.8,contour=T, h = 6) +  # Adjusted h value
+  #scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+   #                    values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                      values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+# Count the rows for each facet
+counts <- table(mc38_object_list_rna_integrated_annotated_manual_confirmed_imputed@meta.data$Treatment) %>% data.frame()
+counts$annotation <- paste0(counts$Var1,":",counts$Freq)
+
+
+# Add facet labels with row counts
+p1_with_labels <- p1 + labs(
+  title = "UMAP Density Plot",
+  caption = paste("Cell Counts:", paste(counts$annotation, sep = " - ", collapse = ", "))
+)
+
+p1_with_labels
+
+dev.off()
+
+#########SAVE EACH FACET WRAP AS ITS OWN FIGURE:
+
+
+####################################################
+######### DENSITY PLOT ::: HIGH PRIOIRTY FOR JONATHAN  :: END
+####################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####################################################
+####################################################
+####################################################
+######### UMAP;;VLN PLOT;;;; USING SEURAT FUNCTIONS
+####################################################
+####################################################
+
+#Visualize the UMAP
+jpeg("Dimplot_all_IntegratedObject_mc38.jpeg",height=4,width=16,units="in",res=600)
+par(mfrow=c(2,2), bty="n")
+a<-DimPlot(mc38_object_list_rna_integrated,
+             reduction  = "RNA_UMAP",
+             group.by = "integrated_snn_res.0.3",
+             cols = c25)
+b<-DimPlot(mc38_object_list_rna_integrated,
+           reduction  = "RNA_UMAP",
+           group.by = "integrated_snn_res.0.4",
+           cols = c25)
+c<-DimPlot(mc38_object_list_rna_integrated,
+           reduction  = "RNA_UMAP",
+           group.by = "integrated_snn_res.0.5",
+           cols = c25)
+d<-DimPlot(mc38_object_list_rna_integrated,
+           reduction  = "RNA_UMAP",
+           group.by = "integrated_snn_res.0.6",
+           cols = c25)
+e<-DimPlot(mc38_object_list_rna_integrated,
+           reduction  = "RNA_UMAP",
+           group.by = "integrated_snn_res.0.7",
+           cols = c25)
+a |b|c|d|e
+dev.off()
+
+
+####################################################
+####################################################
+####################################################
+######### RESOLUTIONS;;FEATURE PLOTS
+####################################################
+####################################################
+mc38_object_list_rna_integrated <- FindClusters(object = mc38_object_list_rna_integrated, resolution = 0.4)
+DefaultAssay(mc38_object_list_rna_integrated) <- "RNA"
+jpeg("FeaturePlot_CD8&CD4_RNAdefault.jpeg",height=8,width=4,units="in",res=600)
+cd8 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = "Cd8a",
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   order = T)
+cd8 / cd4
+dev.off()
+
+#CD4 and FOXP3
+jpeg("FeaturePlot_CD4&FOXP3_RNAdefault.jpeg",height=8,width=4,units="in",res=600)
+foxp3 <- FeaturePlot(mc38_object_list_rna_integrated,
+                     reduction  = "RNA_UMAP",
+                     features = "Foxp3",
+                     min.cutoff = "q25",
+                     max.cutoff = "q95",
+                     order = T)
+cd4 <- FeaturePlot(mc38_object_list_rna_integrated,
+                   reduction  = "RNA_UMAP",
+                   features = c("Cd4"),
+                   min.cutoff = "q10",
+                   max.cutoff = "q95",
+                   order=T)
+cd4 / foxp3
+
+dev.off()
+
+#VlnPlot RNA default
+jpeg("violinplot_CD8_CD4_RNADefault.jpeg",height=4,width=12,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,group.by="integrated_snn_res.0.5",features=c("Cd8a","Cd4"),stack=TRUE,flip=TRUE,pt.size = 0)
+dev.off()
+jpeg("violinplot_foxp3_rna_RNAdefault.jpeg",height=4,width=6,units="in",res=600)
+VlnPlot(mc38_object_list_rna_integrated,group.by="integrated_snn_res.0.5",features=c("Foxp3"),stack=FALSE,flip=TRUE,pt.size = 0)
+dev.off()
+
+#VlnPlot QC------------------------------------:
+mc38_object_list_rna_integrated_unclustered<-readRDS("mc38_object_list_rna_integrated_unclustered.rds")
+jpeg("qc_ncountRNA.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("nCount_RNA"),stack=FALSE,flip=FALSE,pt.size = 0,) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_nfeature.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("nFeature_RNA"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+jpeg("qc_percentmito.jpeg",height=4,width=4,units="in",res=600)
+a=VlnPlot(mc38_object_list_rna_integrated_unclustered,features=c("percent.mt"),stack=FALSE,flip=FALSE,pt.size = 0) + NoLegend() + theme(axis.title = element_text(size = 12, face = "bold" ),strip.text = element_text(size = 12))
+a
+dev.off()
+
+
+
+
+############################################################################## 
+############################################################################## 
+####################Generating Manual UMAP and density plots
+############################################################################## 
+############################################################################## 
+
+###Jonathan's question regarding the DimPlot generation and doing a heatmap of density
+jpeg("UMAP_withcell_DENSITY_MC38_MODEL.jpeg",height=5,width=12,units="in",res=600)
+UMAP <- DimPlot(mc38_object_list_rna_integrated,
+                cols=c25)
+p1 <- ggplot(mc38_object_list_rna_integrated@meta.data,
+             aes(x = mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.99,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",contour=T)+
+  #scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+   #                    values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  scale_fill_viridis_c() +
+  #scale_fill_gradient2(low ="blue", mid="green",high = "red",guide="colourbar",midpoint = 0.01)+
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                       values = c(0.00,0.1, 0.25, 0.5,0.8,1)) +
+  #scale_fill_gradientn(colors = c(scales::alpha("blue", 0.5), "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+  #                    values = c(0.04, 0.4, 0.55,0.8,1)) +
+  #scale_color_gradientn(colours = rainbow(5)) +
+  facet_wrap(~ mc38_object_list_rna_integrated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+UMAP | p1
+dev.off()
+
+
+
+####Generate a UMAP:
+jpeg("UMAP_PLOT.jpeg",height=6,width=15,units="in",res=600)
+ggplot(sc_data@meta.data,
+       aes(x = sc_data@reductions$umap@cell.embeddings[,"UMAP_1"],
+           y = sc_data@reductions$umap@cell.embeddings[,"UMAP_2"],
+           col = new_names_mar2023)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ orig.ident) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+dev.off()
+
+
+
+###Jonathan's question regarding the DimPlot generation and doing a heatmap of density
+jpeg("UMAP_withcell_DENSITY_MC38_MODEL_geom_density_2d.jpeg",height=5,width=12,units="in",res=600)
+UMAP <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+               aes(x =mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                   y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+                   col = Annotations_New)) +
+  geom_point(size = 0.4) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+p1 <- ggplot(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data,
+             aes(x = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+                 y = mc38_object_list_rna_integrated_annotated_manual_confirmed@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"]
+             )) +
+  geom_point(size = 0.45,color="grey") +
+  theme_classic() +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "CellType") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+   stat_density_2d(aes(fill=..level..),  geom = "density_2d_filled",alpha= 0.8,contour=T)+
+  #stat_density_2d(geom = "density_2d_filled", aes(fill = after_stat(density)), contour = TRUE) +
+  #scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.8), "red"),
+                      # values = c(0.00,0.05,0.15,0.4,0.6,1)) +
+  scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+                     values = c(0.00,0.1, 0.25, 0.4,0.5,1)) +
+  #scale_fill_viridis_c() +
+  #scale_fill_gradient2(low ="blue", mid="green",high = "red",guide="colourbar",midpoint = 0.01)+
+  #scale_fill_gradientn(colors = c("lightgrey", "skyblue3", "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+   #                    values = c(0.00,0.1, 0.25, 0.5,0.8,1)) +
+  #scale_fill_gradientn(colors = c(scales::alpha("blue", 0.5), "green", "yellow", scales::alpha("tomato", 0.9), "red"),
+   #                  values = c(0.04, 0.4, 0.55,0.8,1)) +
+  #scale_color_gradientn(colours = rainbow(5)) +
+  facet_wrap(~ mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+
+# Count the rows for each facet
+facet_counts <- table(mc38_object_list_rna_integrated_annotated_manual_confirmed@meta.data$Treatment)
+
+# Add facet labels with row counts
+p1_with_labels <- p1 + labs(
+  title = "UMAP Plot with Cell Counts",
+  caption = paste("Cell Counts:", paste(facet_counts, facet_counts, sep = " - ", collapse = ", "))
+)
+
+UMAP | p1_with_labels
+dev.off()
+
+
+
+####Generate a UMAP:
+jpeg("UMAP_PLOT_MARCH272024.jpeg",height=10,width=9,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated@meta.data,
+       aes(x =mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_1"],
+           y = mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,"RNAUMAP_2"],
+           col = seurat_clusters)) +
+  geom_point(size = 0.99) +
+  theme_classic() +
+  scale_color_manual(values = c25) +
+  guides(colour = guide_legend(override.aes = list(size=5), ncol = 1)) +
+  labs(col = "Seurat Clusters") +
+  ylab("UMAP 2") + xlab("UMAP 1") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+dev.off()
+
+
+##########GEOM RIDGES PLOT
+DefaultAssay(mc38_object_list_rna_integrated) <- "RNA"
+jpeg("GGridgesplot_TRBV132_MC38_mouse_model.jpeg",height=5,width=8,units="in",res=600)
+a <- ggplot(mc38_object_list_rna_integrated@meta.data,
+            aes(x=mc38_object_list_rna_integrated@assays$SCT@data["Trbv13-2",],
+                y=mc38_object_list_rna_integrated@meta.data$Treatment,
+                fill=mc38_object_list_rna_integrated@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.5, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values =c("PBS" = "gray", 
+                              "0019" = "orange",
+                              "0034" = "blue",
+                              "0037" = "yellow",
+                              "0119" = "green",
+                              "0307" = "red",
+                              "pd1" = "magenta")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-2") + 
+  theme(plot.title = element_text(vjust = 0.8, hjust = 0.9, size = 18)) +
+  xlim(0.2,2)
+
+b<- ggplot(mc38_object_list_rna_integrated@meta.data,
+           aes(x=mc38_object_list_rna_integrated@assays$SCT@data["Trbv13-3",],
+               y=mc38_object_list_rna_integrated@meta.data$Treatment,
+               fill=mc38_object_list_rna_integrated@meta.data$Treatment)) +
+  geom_density_ridges(alpha=0.5, scale = 2.5) +
+  theme_bw() +
+  scale_y_discrete(expand = c(0, 0)) +
+  geom_vline(xintercept = 2, linetype = "dashed", linewidth = 0.75) +
+  xlab("RNA Normalized Expression") + ylab("") +
+  scale_fill_manual(values = c("PBS" = "gray", 
+                               "0019" = "orange",
+                               "0034" = "blue",
+                               "0037" = "yellow",
+                               "0119" = "green",
+                                "0307" = "red",
+                                "pd1" = "magenta")) +
+  labs(fill = "Treatment") + 
+  ggtitle("Trbv13-3") + 
+  theme(plot.title = element_text(vjust = 0.8, hjust = 0.9, size = 18)) +
+  xlim(0.01,2)
+a | b
+dev.off()
+
+
+###############################################
+#################FEATURE PLOT:
+#Adding TRBV13-3 information in the RNA column 
+###############################################
+####Taking the data from integrated and adding it to the metadat. 
+DefaultAssay(mc38_object_list_rna_integrated) <- "RNA"
+
+#Now add the TRBV into the 
+mc38_object_list_rna_integrated@meta.data$Trvb5_13_2_3 <- mc38_object_list_rna_integrated@assays$RNA@data["Trbv13-2",] +
+  mc38_object_list_rna_integrated@assays$RNA@data["Trbv13-3",]
+
+
+#Make a feature plot using GGPLOT2
+mc38_object_list_rna_integrated$diff <- scales::rescale(mc38_object_list_rna_integrated$Trvb5_13_2_3, to = c(0,1))
+hist(mc38_object_list_rna_integrated$diff)
+
+############################ 
+############################ 
+##############TRBV13-2 ONLY
+jpeg("FEATUREPLOT_TRBV13-2__TRBV13-3_mc38.jpeg",height=10,width=9,units="in",res=600)
+ggplot(mc38_object_list_rna_integrated@meta.data,
+       aes(x = mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,1],
+           y = mc38_object_list_rna_integrated@reductions$RNA_UMAP@cell.embeddings[,2],
+           col=diff)) +
+  theme_classic() +
+  geom_point(size=0.4, col=ifelse(mc38_object_list_rna_integrated$diff < 0.00925, "grey",
+                                  "red")) +
+  xlab("UMAP1") + ylab("UMAP2") + 
+  labs(col="") +
+  theme(axis.text = element_text(size = 15),
+        legend.text = element_text(size = 15)) +
+  facet_wrap(~ mc38_object_list_rna_integrated@meta.data$Treatment) +
+  theme(axis.title = element_text(size = 16, face = "bold" ),strip.text = element_text(size = 20))
+dev.off()
+
+
+############################################################################## 
+############################################################################## 
+################### END PLOTS
+############################################################################## 
+############################################################################## 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######################################################################################################################################################################################
+######################################################################################################################################################################################
+######################################################################################################################################################################################
+######################################################################################################################################################################################
+######################################################################################################################################################################################
+##########################This didn't work!!!
+#Set Identity:
+ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed <- SetIdent(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed,
+                                                                                                 value = ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@meta.data$Annotations_New)
+mc38_object_list_rna_integrated_annotated_manual_confirmed@assays$RNA@data["Trbv13-2",]
+
+#get data:
+counts.df <- ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@assays$RNA@scale.data %>% 
+  as.matrix %>% t %>% 
+  as.data.frame
+counts.df <- tibble::rownames_to_column(counts.df, "cellnames")
+clusterassignemnts <- data.frame(ct26_object_list_rna_integrated_clustered_cd4_cd8_labeled_annotated_manual_confirmed@active.ident)
+clusterassignemnts <- tibble::rownames_to_column(clusterassignemnts, "cellnames")
+counts.df <- merge(clusterassignemnts, counts.df, by = "cellnames")
+rownames(counts.df) <- counts.df$cellnames
+counts.df$cellnames <- NULL
+colnames(counts.df)[1] <- c("clusters")
+
+##Get genes to extract:
+x251 <- res_deg_x251$Gene
+x352 <- res_deg_x352$Gene
+x310 <- res_deg_x310$Gene
+
+combined_genes <- c("clusters","treatment_status",
+                    res_deg_x251$Gene,
+                    res_deg_x352$Gene,
+                    res_deg_x310$Gene
+) %>% unique()
+
+###Now subset the counts.df dataframe:
+idx1 <- subset(counts.df,
+               select = combined_genes)
+idx2<-data.frame(idx1[,1:ncol(idx1)])
+#row.names(idx2)<-idx1$clusters 
+
+summed_idx2 <- idx2 %>%
+  group_by(clusters, treatment_status) %>%
+  summarise_all(list(~ sum(as.numeric(.), na.rm = TRUE))) %>% data.frame() 
+
+summed_idx2_transposed <- t(summed_idx2)
+
+summed_idx2[] <- apply(summed_idx2, 2, as.numeric)
+
+write.csv(summed_idx2,"summed_idx2_test.csv")
+
