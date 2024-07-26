@@ -1,0 +1,9 @@
+rmd_files:
+  - index.md
+  - howto.md
+  - 00-pipeline.md
+  - 01-stitch.md
+  - 02-segment.md
+  - 03-features.md
+  - 04-celltype.md
+output_dir: build
