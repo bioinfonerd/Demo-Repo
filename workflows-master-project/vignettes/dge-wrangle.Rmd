@@ -1,0 +1,143 @@
+---
+title: "Wrangling DGE output of bcbio"
+author: Artem Sokolov
+output: html_document
+---
+
+## Introduction
+
+This vignette demonstrates how to wrangle the output `bcbio` after it was used to align FASTQ files from a Digital Gene Expression (DGE) experiment. After running `bcbio`, you should see the following files in the output directory:
+
+* `..._DGE.mtx`
+* `..._DGE.mtx.rownames`
+* `..._DGE.mtx.colnames`
+* `barcodes_trugrade_384_set1.dat`
+
+where `...` would contain your project / sample name. If you followed the installation instructions on the main page, you can download an example dataset to follow along in this vignette.
+```{r, message=FALSE}
+workflows::getData( "dge-wrangle" )
+```
+
+We will take advantage of two libraries: tidyverse and [annotables](https://github.com/stephenturner/annotables). The former allows us to manipulate data frames in a variety of ways, while the second package contains pre-computed mapping between Ensembl IDs and HUGO gene names. Both packages should be pre-installed, if you followed the installation instructions on the main page. We load the packages using
+```{r, message=FALSE}
+library( annotables )
+library( tidyverse )
+```
+
+## Loading raw files
+
+**A. `N702_DGE.mtx` contains counts in a "long" matrix format (each row of the data specifies a row - column - value triplet).** Doing `head N702_DGE.mtx` on the command line reveals that the file is in a space-delimited format with lines comments on lines 1-2, general statistics of the matrix on line 3 (58302 rows, 384 columns, and 4406901 entries), and the data itself beginning on line 4. In R, we load this file as follows:
+
+```{r, message = FALSE}
+X <- read_delim( "data/dge-wrangle/N702_DGE.mtx", " ", comment="%" )
+```
+
+By telling the function that lines beginning with `%` are comments, we ensure that it correctly skips the first two lines in the file. The function then treats statistics on the third line as column names, resulting in the following:
+
+```{r}
+head(X)
+```
+
+Let's rename them to something more meaningful. The function `select` is normally used to select a subset of columns in data frame, allowing for renaming of individual columns in the process. Here, we can use it for the latter effect by selecting all three columns and giving them new names:
+
+```{r}
+X <- X %>% select( rowIndex = 1, colIndex = 2, Value = 3 )
+head(X)
+```
+
+We now know that the final counts matrix should be of dimensions 58,302 by 384, where each row corresponds to a gene and each column corresponds to a well. Before we reshape our matrix, we should map row indices to gene names and column indices to well IDs. This is what the other files are for.
+
+**B. `N702_DGE.mtx.rownames` contains gene names (as Ensembl IDs) for each row in the counts matrix.** Doing `head N702_DGE.mtx.rownames` on the command line shows that the file simply contains one Emsembl ID per line. We can therefore treat this is a one-column comma-delimited file (or tab-delimited; since there's only one column, the delimiter doesn't matter):
+
+```{r, message=FALSE}
+## Load our one-column comma-delimited file, giving an explicit name to the only column
+rn <- read_csv( "data/dge-wrangle/N702_DGE.mtx.rownames", col_names = "ENSEMBL" )
+```
+
+While Ensembl IDs provide a unique way to identify individual genes, most biologists interpret data based on HUGO IDs instead. The package `annotables` that we installed earlier contains precomputed mapping between Ensembl and HUGO IDs for the latest human genome assembly. Let's look at the first few rows:
+
+```{r}
+head( annotables::grch38 )
+```
+
+We observe that the first and third columns contain the mapping we are looking for. Using our previous experience with `select`, we isolate both columns and give them meaningful names:
+```{r}
+E2H <- annotables::grch38 %>% select( ENSEMBL = ensgene, HUGO = symbol ) %>%
+    filter( !duplicated( HUGO ) )
+head( E2H )
+```
+The last `filter` step removes duplicate `HUGO` IDs. Most of those map to small nucleoar RNA, so minimal biological insight is lost.
+
+Before merging the mapping with the IDs we loaded from `N702_DGE.mtx.rownames`, we have to make a decision: do we want to keep around rows of the matrix for which there was no HUGO ID? For the purposes of this vignette, the answer is "no", we only want to keep rows that can be mapped to HUGO to assist with biological interpretation. We will therefore merge the mapping with `N702_DGE.mtx.rownames` using `inner_join()`, which is a function that takes two data frames and keeps only those rows that occur in both of them. If the answer in your own experiment is "yes", we want to keep all Ensembl IDs from `N702_DGE.mtx.rownames`, not just those that map to HUGO, then you should replace `inner_join` with `left_join`, which also merges two data frames, but it keeps all the rows in its left (first) argument and assigns `NA` to those rows that are missing in its right argument. (As you can probably guess, there's also `right_join`, which does the opposite, as well as `full_join`, which keeps all rows from both data frames and cross-assigns `NA` as necessary).
+
+Regardless of whether you're keeping all Ensembl IDs or just those that map to HUGO, we need to ensure that the gene names can still be associated with the row index in the final matrix. Before we do any merging, we need to add a column that maintains the association between `N702_DGE.mtx` and `N702_DGE.mtx.rownames`. Recall that we renamed our first column of `X` to `rowIndex`. We must use the same name here, to ensure that everything can be correctly joined later:
+
+```{r}
+rn <- rn %>% mutate( rowIndex = 1:58302 )
+head(rn)
+```
+
+Note that we explicitly specify the number of genes that are captured by matrix `X`, instead of dynamically computing it using `nrow(rn)`. This provides a positive control that the number of rows in `rn` matches the number of genes captured by `X`. If `rn` did not have 58,302 rows, then the above command would produce an error.
+
+Now that we explicitly captured the association between Ensembl IDs and row indices, all that remains to do with map Ensembl IDs to HUGO, using our mapping from above:
+
+```{r}
+rn <- inner_join( rn, E2H )
+head(rn)
+dim(rn)
+```
+
+**C. `N702_DGE.mtx.colnames` contains well barcords for each column in the counts matrix.** Doing `head N702_DGE.mtx.colnames` on the command line, we observe that it's once again a file with a single entry per-line. As before, let's treat it as a single-column comma-delimited file, which we load using `read_csv` and append an additional column to create an association between column names and column indices:
+
+```{r, message=FALSE}
+cn <- read_csv( "data/dge-wrangle/N702_DGE.mtx.colnames", col_names = "Barcode" ) %>%
+    mutate( colIndex = 1:384 )
+```
+
+As before, we explicitly provide a vector of indices that is of length 384, to ensure that it's compatible with what we expected to load from `N702_DGE.mtx.colnames`. Let's look at the first few lines to ensure that everything looks OK.
+
+```{r}
+head(cn)
+```
+
+Just like the case with gene names where we wanted to map Ensembl IDs to HUGO, we also want to map barcodes to well names. This information is contained in the last file: `barcodes_trugrade_384_set1.dat`. Checking the file content on the command line using `head`, we note that it's a three-column tab-delimited file. Let's load it and give each column a meaningful name:
+```{r, message=FALSE}
+B2W <- read_tsv( "data/dge-wrangle/barcodes_trugrade_384_set1.dat",
+                col_names = c("SetID", "Well", "Barcode") )
+```
+
+Note that once again, we need to ensure consistency in column names because `inner_join()` will use them to identify matching columns between multiple data frames. In this particular case, `Barcode` is present in both `cn` and `B2W`. We are now ready to merge the two:
+
+```{r}
+head( B2W )
+cn <- inner_join( cn, B2W )
+head( cn )
+```
+
+## Merging everything
+
+Now that we have the counts data loaded in `X`, gene names with the corresponding HUGO IDs in `rn`, and well barcodes with the corresponding well names in `cn`, we can merge everything into a single data frame by repeated application of `inner_join`:
+
+```{r}
+XX <- inner_join( X, rn ) %>% inner_join( cn )
+head(XX)
+```
+
+In the resulting matrix, we only care about gene names in HUGO, well names and the number of counts that were detected for that gene in that well. As before, we use `select` to reduce the matrix to the columns of interest. (In this case, no renaming is necessary.)
+
+```{r}
+XX <- XX %>% select( HUGO, Well, Value )
+head(XX)
+```
+
+Lastly, we convert the matrix from "long" format to "wide" format, by putting each well into its own column:
+```{r}
+XX <- spread( XX, Well, Value, fill=0L )
+head(XX)
+```
+By default, `spread()` will fill missing values with NA. However, in the case of a DGE experiment, a missing value implies "no counts detected" and should really be a zero value. This is what the `fill` argument is for. (`0L` is a way to tell `R` that the value should be explicitly treated as an integer, not a real.)
+
+The result can be stored to a file using `write_tsv`:
+```{r}
+write_tsv( XX, "data/dge-wrangle/N702_wrangled.tsv" )
+```

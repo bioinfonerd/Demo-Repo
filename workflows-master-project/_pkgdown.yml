@@ -1,0 +1,21 @@
+navbar:
+  title: ~
+  left:
+    - icon: fa-home fa-lg
+      href: index.html
+    - text: DGE
+      menu:
+      - text: Wrangling bcbio output
+        href: articles/dge-wrangle.html
+      - text: Principal Component Analysis
+        href: articles/dge-pca.html
+    - text: Helper Functions
+      href: reference/index.html
+  
+reference:
+- title: All functions
+  desc: ~
+  contents: '`getData`'
+
+template:
+  path: "inst/templates"
