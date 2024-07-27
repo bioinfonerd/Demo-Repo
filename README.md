@@ -3,11 +3,14 @@ Github Examples for Sr. Computational Biologist position
 
 # Project Organization
 
-As I have been involved with several organizations and projects, that have their repositories, it would be easier to format it into a single GitHub repository. The examples I selected relate to single-cell, immunology, oncology, and data processing. To protect the proprietary nature of some of these projects, I have replaced the company's name. In total, 17 projects are highlighted to cover the scope. Some of these projects I was the only coder or analyst, but others were collaborative, so the format and style will be different. 
+I have been involved with several organizations and projects, each with its own repository. To streamline this, I have consolidated these projects into a single GitHub repository. The selected examples span various fields, including single-cell research, immunology, oncology, and data processing. To maintain confidentiality, I have anonymized company names except for H3 Biomedicine, which has since ceased operations. This repository highlights 17 projects in total, covering a broad scope of my work. While some projects were solely my responsibility as a coder or analyst, others were collaborative efforts, resulting in variations in format and style.
 
 # Project Organization
 
 ### 1. BCMA-SMLA-project
+Purpose: 
+What Does Code include
+
 ### 2. CyCif_Manager-master-project
 ### 3. DrugResponse-master-project
 ### 4. EPAT-project
