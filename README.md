@@ -8,10 +8,13 @@ I have been involved with several organizations and projects, each with its own 
 # Project Organization
 
 ### 1. BCMA-SMLA-project
-Purpose: 
-What Does Code include
+
+Cancer cells commonly develop resistance to immunotherapy by loss of antigen expression. Here, we use our CRISPR interference– and CRISPR activation–based functional genomics platform to systematically identify pathways controlling cell surface expression of the multiple myeloma immunotherapy antigen B-cell maturation antigen (BCMA). We discovered that pharmacologic inhibition of HDAC7 and the Sec61 complex increased cell surface BCMA. This contains the analysis that led to discovering those pathways and targets that led to an expanded project. 
 
 ### 2. CyCif_Manager-master-project
+
+
+
 ### 3. DrugResponse-master-project
 ### 4. EPAT-project
 ### 5. SF3B1_WestLake_CN-project
