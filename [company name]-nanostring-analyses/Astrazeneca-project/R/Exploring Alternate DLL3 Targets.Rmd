@@ -1,0 +1,82 @@
+---
+title: "Exploring Alternate DLL3 Targets"
+output: pdf_document
+---
+
+```
+SCLC remains an interesting indication for us: 1) among different solid tumor types, SCLC cells are relatively sensitive to splice modulator; and 2) it is a high unmet medical need. 
+
+With new results by Yaya, DLL3 may not be a good candidate antigen for splice modulator ADC because of it cell surface low expression level. If the expression level is the limiting factor, we are interesting to look for a different antigen that express higher level with acceptable selectivity in SCLC over other major organs. The two antigen mentioned in the email are emerging targets and there is no clinical compound. The working group may take advantage of the reagents and knowledge accumulated in SCLC area and systematically examine SCLC for potential good target antigens. 
+
+Minimal requirements: 1) Log2TPM >5; 2) cell surface expression; 3) delta Log2TPM >=2 over essential normal organs such as heart, lung, liver. 
+
+You may use CCLE panel plus GETX to zoom into a list molecule, and cross examine withTCGA to find out preliminarily whether we have a chance there. 
+
+
+DLK1 and Neurexin-1 for SCLC and other cancer types
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpmisc)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(odbc)
+library(readr)
+```
+
+
+```{r data}
+load('../rdata/CCLE_expression_full.Rdata')
+sample.metadata <- read.csv('../rdata/sample_info.csv.gz',sep=",")
+
+dll3_surface_cell_lines <- c("SHP-77","NCI-H82","DMS 79","NCI-H889",
+                             "NCI-H211","DMS 53","DMS 454","NCI-H2286",
+                             "DMS 114","NCI-H1876")
+dll3_surface_protein_h3experiment <- c(1285,1221,849,644,503,477,159,95,54,44)
+
+dll3_experiment_data <- data.frame(dll3_surface_cell_lines,dll3_surface_protein_h3experiment)
+
+sample.metadata %>% filter(lineage_subtype=='SCLC')
+
+cell_line_depmapID <- sample.metadata %>% filter(cell_line_name %in% dll3_experiment_data$dll3_surface_cell_lines) %>% select(c("cell_line_name","DepMap_ID"))
+
+dll3_gene_expression <- gene.expression %>% filter(X %in% cell_line_depmapID$DepMap_ID) %>% select(c("X","DLL3..ENSG00000090932."))
+
+tmp <- merge(cell_line_depmapID,dll3_gene_expression,by.x = "DepMap_ID",by.y="X")
+results <- merge(tmp,dll3_experiment_data,by.x='cell_line_name',by.y='dll3_surface_cell_lines')
+```
+
+
+
+
+```{r}
+
+#x axis = ADAR
+pdf(file="../images/DLL3 Expression vs DLL3 Surface Protein.pdf")
+
+ggplot(results, aes(x = DLL3..ENSG00000090932., y = dll3_surface_protein_h3experiment)) +
+    geom_point(aes(color = cell_line_name)) +
+    labs(title = "DLL3 Expression vs DLL3 Surface Protein",
+         x = "DLL3 Expression",
+         y = "DLL3 Surface Protein") +
+    geom_smooth(method = "lm", se=FALSE) +
+    theme(plot.margin=unit(c(0.1,0.1,0.1,0.1),"cm")) +
+    stat_poly_eq(formula = y ~ x,
+                 aes(label = paste(..rr.label..)),
+                 parse = TRUE)
+    
+    
+    # +
+    # xlim(-2.1,0.5) +
+    # ylim(0,15)
+
+dev.off()
+
+
+```
+
+

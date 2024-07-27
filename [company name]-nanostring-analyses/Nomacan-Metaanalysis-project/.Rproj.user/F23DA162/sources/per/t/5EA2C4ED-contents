@@ -1,0 +1,500 @@
+---
+title: "Flow Cytometry Comparison"
+author: "Nathan T. Johnson"
+date: "4/29/2020"
+output: pdf_document
+purpose: How Consistent are the Flow results with Nanostring?
+---
+
+
+
+#data we need
+#flow, functional data, gene expression, spread
+
+
+
+
+
+
+
+
+```{r results='asis', echo=FALSE, include=FALSE,warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+#load in libraries
+Packages <- c('tidyverse','ggplot2','openxlsx','RColorBrewer','Hmisc','icd','hrbrthemes','viridis','knitr','PCAtools','biomaRt','ggpubr')
+lapply(Packages, library, character.only = TRUE)
+```
+
+```{r function definitions, echo = FALSE}
+
+#read in all sheets from excel
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+```
+
+```{r data cleaning and setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+#set working directory
+setwd('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/')
+
+
+#Pull in Nanostring metadata and expression data
+Expression_Data <- read.csv('Expression Data.csv')
+Metadata <- read.csv('Metadata.csv')
+Genes <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List.csv')
+Annotations <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List_Annotations.csv')
+
+#rotate expression data so genes are columns and clean it up
+Expression_Data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(Expression_Data) <-Expression_Data[2,]
+Expression_Data <- Expression_Data[-1, ]
+Expression_Data <- Expression_Data[-1, ]
+Expression_Data <- Expression_Data[-1, ]
+
+#separate out column names into multiple columns in order to match columns
+Metadata$Sample.Name <- lapply(Metadata$Sample.Name,as.character)
+Metadata <- Metadata %>% separate(Sample.Name,c('Sample','Fraction'),sep='[.]',remove=FALSE)
+
+#Pull in Flow Data
+#The first shows immune cells as a proportion of total CD45+
+
+CD45_flow <- read.csv('../Flow Data/percent CD45 - Nathan Modified.csv')
+
+#The other one has sheets with data from S1 or S3, as a proportion of all cells collected or as a proportion of live cells (as indicated). Let me know if you have any questions.
+all_cells_flow <- read_all_sheets('../Flow Data/immune profiling - P0003-31.xlsx')
+
+```
+
+# Flow Cytometry Comparison with Nanostring Results
+Goal: Are Nanostring and Flow results comparable?
+
+Problem Setup:
+
+  - Nanostring profiles all RNA from all cells 
+  
+  - Flow Cytometry data profiles protein at single cell level based on percent compositions at different cell type proportions
+
+Sample Characteristics:
+  - Select for samples that have same phenotype characteristics between both flow and nanostring (As it is not the exact same samples)
+  - Flow Cytometry sample organizes by Sample and fraction
+
+Analysis setup:
+  - compare based on protein:rna comparison (pearson correlation between nanostring and flow)
+  - compare based on cell type calling (pearson correlation between the cell type nanostring mean values and flow calls)
+  - focus on cd45 cells (pearson correlation between nanostring mean values and flow calls)
+
+### Nanostring Sample Setup
+
+```{r,echo=FALSE}
+#Nanostring
+Metadata %>% group_by(Fraction) %>% count() %>% knitr::kable(caption = 'Nanostring Fractions')
+
+
+#Flow Metadata
+CD45_flow %>% group_by(fraction) %>% count() %>% knitr::kable(caption = 'Flow Fractions')
+```
+
+### Cell Types Present for Flow Cytometry and Nanostring
+
+```{r,echo=FALSE}
+
+#Flow Cell types
+#flow_tmp <- colnames(CD45_flow)[3:length(CD45_flow)] %>% knitr::kable()
+colnames(CD45_flow)[3:length(CD45_flow)] %>% knitr::kable(caption = 'Nanostring Cell Types')
+
+
+#Nanostring cell types
+#tmp <- Annotations %>% group_by(Cell.Type) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Cell.Type) %>% count() %>% knitr::kable(caption = 'Flow Cell Types')
+#Nanostring <- c()
+#for(i in 4:length(tmp)){
+#  Nanostring <- append(Nanostring,unlist(strsplit(unlist(strsplit(tmp[i],split=" "))[1],split='[|]'))[2])
+#}
+
+#make new table with both
+#output <- data.frame(Nanostring)
+#output['Flow'] <- c(flow_tmp, rep('NA',nrow(output)-length(flow_tmp)))
+                         
+
+#print table
+#output %>% knitr::kable()
+```
+
+### What markers are shared between Flow and Nanostring
+- Flow Marker Labels do not all match Nanostring labels
+- Double Checked each marker for surrogates
+- not present: EPCAM, CD16, CD3, CD16
+- substitutes:
+PTPRC = CD45
+ITGAX = CD11c
+CD56 = NCAM1
+CD8 = CD8A and CD8B
+PDCD1 = PD1
+CD274 = PD-L1
+
+```{r,echo=FALSE}
+
+#Original<-c('CD45','CD11c','EPCAM','CD14','CD16','CD3','CD4','CD8','CD19','CD56',,'PD-L1','PD1')
+#Substitute<-c('PTPRC','ITGAX','CD14','CD4','CD19',,'CD8A','CD8B','NCAM1',,'PDCD1','CD274')
+
+```
+
+
+
+
+```{r, echo=FALSE}
+#Flow Names
+#colnames(all_cells_flow[[1]][2:length(all_cells_flow[[1]])])
+
+#Rather the parsing, just hard coded them
+#original marker names
+flow_markers <- c('CD45','EPCAM','CD14','CD16','CD3','CD4','CD8','CD19','CD56','CD11c','PD-L1','PD1')
+
+#after checking for name changes, new list below
+flow_markers <- c('CD14','CD4','CD19','PTPRC','CD8A','CD8B','NCAM1','ITGAX','PDCD1','CD274')
+#not present: EPCAM, CD16, CD3, CD16
+
+#Flow Markers in Nanostring Data
+flow_markers[flow_markers %in% Annotations$Gene] %>% knitr::kable(col.names='Markers Found in Both Flow and Nanostring')
+
+```
+
+
+# Correlation Between Nanostring &  Flow single marker
+- S1 and S3 with all or alive only cells
+- Difficulty rests in how flow quantifies cells
+- % of CD45+ is not comparable to CD45 RNA expression
+  - Need the raw Flow values for the total protein fluorescent could be a better comparison
+  - Alternate ways to normalize both Flow and Nanostring data
+- Nanostring is unable to filter out dead cells
+- Flow results though will give indication if there is a correlation and possibly where a threshold could be 
+
+- Current Results: multiple targets = average Nanostring values
+  - if negative for flow then did not include nanostring values
+  - If targets not available, skipped
+
+
+
+```{r,echo=FALSE}
+###############
+#preprocessing#
+###############
+#separate out column names into multiple columns in order to match columns
+Metadata$Sample.Name <- lapply(Metadata$Sample.Name,as.character)
+Metadata <- Metadata %>% separate(Sample.Name,c('Sample','Fraction'),sep='[.]',remove=FALSE)
+for(i in 1:length(all_cells_flow)){all_cells_flow[[i]] <- tidyr::separate(all_cells_flow[[i]],X1,c('Type','Sample'),sep='-',remove=FALSE)}
+
+#Rather the parsing, just hard coded them
+#original marker names
+flow_markers <- c('CD45','EPCAM','CD14','CD16','CD3','CD4','CD8','CD19','CD56','CD11c','PD-L1','PD1')
+
+#after checking for name changes, new list below
+flow_markers <- c('CD14','CD4','CD19','PTPRC','CD8A','CD8B','NCAM1','ITGAX','PDCD1','CD274')
+#not present: EPCAM, CD16, CD3, CD16
+#PTPRC = CD45
+#ITGAX = CD11c
+#Cd56 = NCAM1
+#CD8 = CD8A and CD8B
+#PDCD1 = PD1
+#CD274 = PD-L1
+
+#map samples
+
+#print(Metadata %>% filter(Fraction == 'S3'))
+#print(Metadata %>% filter(Fraction == 'S1'))
+
+```
+
+
+### S1 All Cells
+
+```{r,echo=FALSE}
+#S1 live
+tmp_flow_S1 <- all_cells_flow[[2]] %>% filter(Sample == (Metadata %>% filter(Fraction == 'S1'))$Sample)
+tmp_nanostring_S1 <- Expression_Data %>% filter(Gene_Name %in% (Metadata %>% filter(Fraction == 'S1'))$Sample.Name)
+
+
+#PTPRC = CD45
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"PTPRC" ),as.numeric(tmp_flow_S1$"CD45+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "Flow",title='S1 Fraction CD45')
+
+
+
+#CD14
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD14"),as.numeric(tmp_flow_S1$"CD14+/CD16-.mono")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "CD14+/CD16-.mono Flow",title='S1 Fraction CD14')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S1 Fraction CD3/CD4')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S1 Fraction CD3/CD4')
+```
+
+
+
+### S1 Excluding Dead Cells
+
+```{r,echo=FALSE}
+#S1 live
+tmp_flow_S1 <- all_cells_flow[[4]] %>% filter(Sample == (Metadata %>% filter(Fraction == 'S1'))$Sample)
+tmp_nanostring_S1 <- Expression_Data %>% filter(Gene_Name %in% (Metadata %>% filter(Fraction == 'S1'))$Sample.Name)
+
+
+#PTPRC = CD45
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"PTPRC" ),as.numeric(tmp_flow_S1$"CD45+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "Flow",title='S1 Fraction CD45')
+
+#CD14
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD14"),as.numeric(tmp_flow_S1$"CD14+/CD16-.mono")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "CD14+/CD16-.mono Flow",title='S1 Fraction CD14')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S1 Fraction CD3/CD4')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S1 Fraction CD3/CD4')
+```
+
+
+### S3 all cells
+
+```{r,echo=FALSE}
+
+
+
+####
+#S3#
+####
+
+#change list and fraction filter
+#S3 live
+tmp_flow_S1 <- all_cells_flow[[1]] %>% filter(Sample == (Metadata %>% filter(Fraction == 'S3'))$Sample)
+tmp_nanostring_S1 <- Expression_Data %>% filter(Gene_Name %in% (Metadata %>% filter(Fraction == 'S3'))$Sample.Name)
+
+
+#PTPRC = CD45
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"PTPRC" ),as.numeric(tmp_flow_S1$"CD45+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "Flow",title='S3 Fraction CD45')
+
+
+
+#CD14
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD14"),as.numeric(tmp_flow_S1$"CD14+/CD16-.mono")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "CD14+/CD16-.mono Flow",title='S3 Fraction CD14')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S3 Fraction CD3/CD4')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S3 Fraction CD3/CD4')
+
+
+
+# 
+# colnames(tmp_flow_S1)
+# 
+# CD19
+# PTPRC
+# CD8A
+# CD8B
+# NCAM1
+# ITGAX
+# PDCD1
+# CD274
+
+
+#PTPRC = CD45
+#ITGAX = CD11c
+#Cd56 = NCAM1
+#CD8 = CD8A and CD8B
+#PDCD1 = PD1
+#CD274 = PD-L1
+
+
+
+
+```
+
+### S3 Excluding Dead cells
+
+```{r,echo=FALSE}
+
+
+
+####
+#S3#
+####
+
+#change list and fraction filter
+#S3 live
+tmp_flow_S1 <- all_cells_flow[[3]] %>% filter(Sample == (Metadata %>% filter(Fraction == 'S3'))$Sample)
+tmp_nanostring_S1 <- Expression_Data %>% filter(Gene_Name %in% (Metadata %>% filter(Fraction == 'S3'))$Sample.Name)
+
+
+#PTPRC = CD45
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"PTPRC" ),as.numeric(tmp_flow_S1$"CD45+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "Flow",title='S3 Fraction CD45')
+
+
+
+#CD14
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD14"),as.numeric(tmp_flow_S1$"CD14+/CD16-.mono")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring", ylab = "CD14+/CD16-.mono Flow",title='S3 Fraction CD14')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S3 Fraction CD3/CD4')
+
+
+#CD4 & CD3 (CD3 not in Nanostring data)
+my_data <- data.frame(cbind(as.numeric(tmp_nanostring_S1$"CD4"),as.numeric(tmp_flow_S1$"CD3+/CD4+")))
+colnames(my_data)<-c('Nanostring','Flow')
+
+#pearson correlation
+ggscatter(my_data, x = "Nanostring", y = "Flow", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Nanostring: CD4", ylab = "Flow: CD3+/CD4+ ",title='S3 Fraction CD3/CD4')
+
+
+
+# 
+# colnames(tmp_flow_S1)
+# 
+# CD19
+# PTPRC
+# CD8A
+# CD8B
+# NCAM1
+# ITGAX
+# PDCD1
+# CD274
+
+
+#PTPRC = CD45
+#ITGAX = CD11c
+#Cd56 = NCAM1
+#CD8 = CD8A and CD8B
+#PDCD1 = PD1
+#CD274 = PD-L1
+
+
+
+
+```
+
+
+
+

@@ -1,0 +1,162 @@
+---
+title: "Durva Plots"
+author: "Nathan Johnson"
+date: "8/11/2021"
+output: pdf_document
+---
+
+Goal:
+
+
+#Nathan Specific
+Cell Type Plots
+
+
+#Nsolver Maps
+PCA 
+
+Pathway Maps for excluding different 
+
+
+```{r, message = TRUE, echo=FALSE}
+#library
+library('tidyverse')
+library('ggplot2')
+library('openxlsx')
+library('RColorBrewer')
+library(rstatix)
+library(ggpubr)
+library(ggpmisc)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(odbc)
+library(readr)
+library(stringr)
+```
+
+```{r,echo=FALSE,message=FALSE}
+#function
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+nanostring_csv_cell_cleanup <- function(path,file){
+  
+df <- read.csv2(paste(c(path,file),collapse=""),sep=",",header=FALSE)
+  
+tmp <- df[2,]
+tmp$V1 <- 'ID'
+names(df) <- tmp
+df <- df[-1,]
+df <- df[-1,]
+return(df)
+}
+
+```
+
+```{r}
+
+#which analysis
+analysis <- 'Durva Analysis 2021-08-06 10-57'
+
+#data path
+path <- paste(c("../data/Nanostring/",analysis,"/results/cell types/"),collapse="")
+
+#cell type
+cell_type_relative <- nanostring_csv_cell_cleanup(path,"cell type scores - relative.csv")
+
+#TIL
+cell_type_raw <- nanostring_csv_cell_cleanup(path,"cell type scores - raw.csv")
+
+#Meta
+meta <- 
+
+for(i in 1:15){
+  strsplit(cell_type_raw$ID[i],split="-")
+}
+
+Patient_ID <- sapply(strsplit(cell_type_raw$ID, "-"), `[`, 2)
+tmp <- sapply(strsplit(cell_type_raw$ID, "-"), `[`, 1)
+Patient_ID[10:16] <- tmp[10:16]
+tmp <- sapply(strsplit(cell_type_raw$ID, " "), `[`, 1)
+Patient_ID[17:55] <- tmp[17:55]
+
+
+
+
+tmp <- 
+tmp <- sapply(strsplit(cell_type_raw$ID, "-"), `[`, 1)
+
+
+[1:15]
+
+[16:`]
+
+
+#Pathyway (Not Populated) make function to check if populated
+# path <- "../data/Nanostring/Durva Analysis 2021-08-06 10-57/results/pathway scoring/"
+# 
+# #pathway
+# pathway <- read.csv2("/home/bionerd/Dropbox/Company/Xsphera/@Data/Nanostring/Pooled/Full_Probe_Annotation 2021-03-19 09-56/results/pathway scoring/signature scores.csv",
+#                            sep=",")
+# 
+# test <- nanostring_csv_cell_cleanup(path,"signature scores.csv")
+
+
+#genes
+# expression <- read_all_sheets("/home/bionerd/Dropbox/Company/Xsphera/@Data/Nanostring/Pooled/Full_Probe_Annotation 2021-03-19 09-56/results/Normalization/mRNA_normalized_data.xlsx")
+
+#metadata
+# metadata <- read.csv2('/home/bionerd/Dropbox/Company/Xsphera/@Data/Nanostring/Xsphera Server Nanostring Data/2021.03.11 Nanostring_Metadata.csv',
+#                       sep=",",fileEncoding="latin1")
+
+```
+
+```{r,Heatmap of the genes of responders vs not}
+#meta
+meta<-read.csv('/c/Users/Nathan/Dropbox/Company/Xsphera/@Analysis/Astrazeneca/data/sample_info.csv')
+meta <- meta %>% separate(Annotation,into=c('Day','Treatment','Patient','Concentration','Responder'),sep=":")
+#genesforantigenpresentation
+antigen_genes <- read.csv('/c/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/LBL-10498-02_IO_360_Gene_List_functionalannotation.csv')
+antigen_genes <- antigen_genes %>% filter(Antigen.Presentation == '+')
+antigen_genes<-antigen_genes %>% select(Gene,Antigen.Presentation)
+#expression
+expression <- read.csv('/c/Users/Nathan/Dropbox/Company/Xsphera/@Analysis/Astrazeneca/data/Nanostring/D3_Durva_100_Responders_vs_Not 2021-09-17 14-30/results/Normalization/log2_normalization.csv')
+tmp <- colnames(expression)
+tmp <- sapply(tmp,function(x) unlist(str_split(x,pattern="[.]"))[1])
+colnames(expression) <- tmp
+colnames(expression)[1] <- 'File.Name'
+expression <- gather(expression,key='gene',value='log2.expression',-File.Name)
+colnames(expression)[2]<-'Gene'
+
+#Plot Data
+plot.data <- merge(expression,meta)
+plot.data <- merge(plot.data,antigen_genes)
+
+#organize data
+
+#https://jcoliver.github.io/learn-r/006-heatmaps.html
+ggplot(plot.data, aes(Patient, Gene, fill= log2.expression)) + 
+ geom_tile() +
+ ggtitle('Antigen Presentation Genes') +
+  geom_tile() +
+  xlab(label = "Sample") +
+  facet_grid(~ Responder)+ 
+  theme(axis.text.x=element_text(angle = -90, hjust = 0))+
+  scale_fill_gradient2(low="blue", high="red", guide="colorbar")
+
+#plot
+ggplot(plot.data, aes(x=Gene, y=log2.expression,color=Responder)) + 
+  geom_violin(trim=FALSE) +
+  theme(axis.text.x=element_text(angle = 90, hjust = 0))
+
+
+
+```

@@ -1,0 +1,13 @@
+"0","library(ggpmisc)
+"
+"2","Loading required package: ggplot2
+"
+"2","
+Attaching package: ‘ggpmisc’
+
+"
+"2","The following object is masked from ‘package:ggplot2’:
+
+    annotate
+
+"

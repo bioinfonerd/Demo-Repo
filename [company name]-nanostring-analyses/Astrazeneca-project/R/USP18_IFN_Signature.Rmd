@@ -1,0 +1,216 @@
+---
+title: "USP18 - IFN Signature"
+output: html_document
+author: Nathan T. Johnson
+date: 03.11.2021
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ggpmisc)
+```
+
+```{r data}
+load('../rdata/IFN_signature.Rdata')
+load('../rdata/Achilles_gene_effect.Rdata')
+load('../rdata/CCLE_expression_full.Rdata')
+ISG.ADAR.SIG <- read.csv('../data/ISG-ADAR-signature.txt',sep="\t",header=FALSE)
+sample.metadata <- read.csv('../data/DepMap/sample_info.csv.gz',sep=",")
+
+#split the IFN signature gene name
+IFN_signature_names <- IFN_signature %>% select(-c(DepMap.ID,Lineage))
+IFN_signature_names <- lapply(names(IFN_signature_names),function(x) unlist(strsplit(x, '[.]'))[[1]])
+IFN_signature_names <- IFN_signature_names[-c(34,35)]
+IFN_signature_names <- Reduce(c,IFN_signature_names)
+
+#data clean up
+#rename gene names to be consistent
+gene.name<-lapply(names(ceres.dependency)[2:length(ceres.dependency)], function(x) unlist(strsplit(x, '[..]'))[[1]])
+names(ceres.dependency)[-1] <- gene.name
+
+#rename gene names to be consistent
+gene.name<-lapply(names(gene.expression)[2:length(gene.expression)], function(x) unlist(strsplit(x, '[..]'))[[1]])
+names(gene.expression)[-1] <- gene.name
+
+#select signature
+IFN.Sig.IPA <- gene.expression %>% select(X,str_to_upper(IFN_signature_names))
+ISG.Sig.ADAR <- gene.expression %>% select(X,str_to_upper(ISG.ADAR.SIG$V1))
+IFN.Sig.IPA <- IFN.Sig.IPA %>%  rename(DepMapID = X)
+ISG.Sig.ADAR <- ISG.Sig.ADAR %>%  rename(DepMapID = X)
+
+#sum IFN gene signature
+IFN.Sig.IPA$IFN_Sum <- rowSums(IFN.Sig.IPA[ , c(2,ncol(IFN.Sig.IPA))], na.rm=TRUE)
+IFN.Sig.IPA$IFN_Mean <- rowMeans(IFN.Sig.IPA[ , c(2,ncol(IFN.Sig.IPA))], na.rm=TRUE)
+ISG.Sig.ADAR$IFN_Sum <- rowSums(ISG.Sig.ADAR[ , c(2,ncol(ISG.Sig.ADAR))], na.rm=TRUE)
+ISG.Sig.ADAR$IFN_Mean <- rowMeans(ISG.Sig.ADAR[ , c(2,ncol(ISG.Sig.ADAR))], na.rm=TRUE)
+
+#add lineage information
+tmp <- sample.metadata %>% select(DepMap_ID,lineage)
+IFN.Sig.IPA <- merge(IFN.Sig.IPA,tmp,by.x="DepMapID",by.y="DepMap_ID")
+ISG.Sig.ADAR <- merge(ISG.Sig.ADAR,tmp,by.x="DepMapID",by.y="DepMap_ID")
+
+#add USP18 ceres.dependency to table
+tmp <- ceres.dependency %>% select(DepMap_ID,USP18)
+tmp <- tmp %>%  rename(USP18_ceres = USP18)
+IFN.Sig.IPA <- merge(IFN.Sig.IPA,tmp,by.x="DepMapID",by.y="DepMap_ID")
+ISG.Sig.ADAR <- merge(ISG.Sig.ADAR,tmp,by.x="DepMapID",by.y="DepMap_ID")
+
+#add ADAR ceres.dependency to table
+tmp <- ceres.dependency %>% select(DepMap_ID,ADAR)
+tmp <- tmp %>%  rename(ADAR_ceres = ADAR)
+IFN.Sig.IPA <- merge(IFN.Sig.IPA,tmp,by.x="DepMapID",by.y="DepMap_ID")
+ISG.Sig.ADAR <- merge(ISG.Sig.ADAR,tmp,by.x="DepMapID",by.y="DepMap_ID")
+
+
+```
+
+```{r ISG.Sig.Adar Scatterplot}
+
+#IFN_Mean plot
+#expression = sum of IFN expression 
+#x axis = USP18
+pdf(file="../images/USP18 Ceres Score vs ISG.Sig.Adar Signature Genes.pdf")
+ggplot(ISG.Sig.ADAR, aes(x = USP18_ceres, y = IFN_Mean)) +
+    geom_point(aes(color = lineage)) +
+    labs(title = "USP18 Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "USP18 Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")+
+        theme(plot.margin=unit(c(0.1,0.1,0.1,0.1),"cm"))+
+        geom_smooth(method = "lm")  +
+        stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..rr.label..)), 
+                parse = TRUE)
+dev.off()
+
+#x axis = ADAR
+pdf(file="../images/ADAR Ceres Score vs ISG.Sig.Adar Signature Genes.pdf")
+
+ggplot(ISG.Sig.ADAR, aes(x = ADAR_ceres, y = IFN_Mean)) +
+    geom_point(aes(color = lineage)) +
+    labs(title = "ADAR Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "ADAR Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")+
+        theme(plot.margin=unit(c(0.1,0.1,0.1,0.1),"cm")) +
+        geom_smooth(method = "lm")  +
+        stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..rr.label..)), 
+                parse = TRUE)+ 
+    xlim(-2.1,0.5) +
+    ylim(0,15)
+
+dev.off()
+
+```
+
+```{r ISG.Sig.Adar Scatterplot Bin}
+
+#bucketing
+#bar graph
+#TCGA with ISG score
+
+#1 quartile & below = low
+#1 quartile to 3 quartile = medium
+#>3 quartile = high
+
+names <- c("low", "medium", "high")
+b <- c(-Inf, 7, 8, Inf)
+ISG.Sig.ADAR$ISG_ADAR_bin <- cut(ISG.Sig.ADAR$IFN_Mean, breaks = b, labels = names)
+
+
+pdf(file="../images/ADAR Ceres Score vs ISG.Sig.Adar Signature Genes.bin.pdf")
+ggplot(ISG.Sig.ADAR, aes(x = ADAR_ceres, y = IFN_Mean)) +
+    geom_point(aes(color = ISG_ADAR_bin)) +
+    labs(title = "ADAR Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "ADAR Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")+
+        theme(plot.margin=unit(c(0.1,0.1,0.1,0.1),"cm")) +
+        geom_smooth(method = "lm")  +
+        stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..rr.label..)), 
+                parse = TRUE) + 
+    xlim(-2.1,0.5) +
+    ylim(0,15)
+dev.off()
+
+
+pdf(file="../images/USP18 Ceres Score vs ISG.Sig.Adar Signature Genes.bin.pdf")
+plot <- ggplot(ISG.Sig.ADAR, aes(x = USP18_ceres, y = IFN_Mean)) +
+    geom_point(aes(color = ISG_ADAR_bin)) +
+    labs(title = "USP18 Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "USP18 Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")+
+        theme(plot.margin=unit(c(0.1,0.1,0.1,0.1),"cm")) +
+        geom_smooth(method = "lm")  +
+        stat_poly_eq(formula = my.formula, 
+                aes(label = paste(..rr.label..)), 
+                parse = TRUE)+ 
+    xlim(-2.1,0.5) +
+    ylim(0,15)
+dev.off()
+
+
+```
+
+```{r ISG.Sig.Adar Boxplot Bin}
+
+#box plot graph
+
+pdf(file="../images/ADAR Ceres Score vs ISG.Sig.Adar Signature Genes.boxplot.bin.pdf")
+plot <- ggplot(ISG.Sig.ADAR, aes(x=ADAR_ceres, y=IFN_Mean, color=ISG_ADAR_bin)) +
+  geom_boxplot()+
+    labs(title = "ADAR Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "ADAR Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")
+dev.off()
+
+
+pdf(file="../images/USP18 Ceres Score vs ISG.Sig.Adar Signature Genes.boxplot.bin.pdf")
+plot <- ggplot(ISG.Sig.ADAR, aes(x=USP18_ceres, y=IFN_Mean, color=ISG_ADAR_bin)) +
+  geom_boxplot()+
+    labs(title = "USP18 Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "USP18 Gene Effect (CERES)",
+         y = "Mean of ISG.Sig.Adar Signature Genes")
+dev.off()
+
+
+
+
+```
+
+```{r ISG.Sig.Adar Lineage Boxplot Bin}
+
+#box plot graph
+
+pdf(file="../images/ADAR Ceres Score vs ISG.Sig.Adar Signature Genes.lineage.boxplot.bin.pdf")
+plot <- ggplot(ISG.Sig.ADAR, aes(x=lineage, y=ADAR_ceres, color=ISG_ADAR_bin)) +
+  geom_boxplot()+
+    labs(title = "ADAR Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "lineage",
+         y = "ADAR Ceres Score") + 
+    coord_flip()
+dev.off()
+
+pdf(file="../images/USP18 Ceres Score vs ISG.Sig.Adar Signature Genes.lineage.boxplot.bin.pdf")
+plot <- ggplot(ISG.Sig.ADAR, aes(x=lineage, y=USP18_ceres, color=ISG_ADAR_bin)) +
+  geom_boxplot()+
+    labs(title = "USP18 Ceres Score vs ISG.Sig.Adar Signature Genes",
+         x = "lineage",
+         y = "USP18 Ceres Score")+ 
+    coord_flip()
+dev.off()
+
+```
+
+```{r Lineage Boxplot ISG.Sig.Adar}
+
+pdf(file="../images/ISG.Sig.Adar.lineage.boxplot.bin.pdf")
+#box plot graph
+ggplot(ISG.Sig.ADAR, aes(x=lineage, y=IFN_Mean, color=ISG_ADAR_bin)) +
+  geom_boxplot()+
+    labs(title = "ISG.Sig.Adar Signature",
+         x = "Lineage",
+         y = "Mean of ISG.Sig.Adar Signature Genes") + 
+    coord_flip()
+dev.off()
+```

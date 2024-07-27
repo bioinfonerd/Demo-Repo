@@ -1,0 +1,1008 @@
+﻿<!DOCTYPE html><!--[if IE 9]><html class="lt-ie10" lang="en" > <![endif]--><!--[if IE 10]><html class="ie10" lang="en" > <![endif]--><html class="no-js" lang="en">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nCounter Advanced Analysis Report</title>
+    <meta name="author" content="NanoString Technologies" />
+    <link rel="stylesheet" href="resources/css/normalize.css" />
+    <link rel="stylesheet" href="resources/css/foundation.css" />
+    <link rel="stylesheet" href="resources/css/jquery.dataTables.min.css" />
+    <link rel="stylesheet" href="resources/css/jquery-ui.css" />
+    <link rel="stylesheet" href="resources/css/theme.css" />
+    <link rel="stylesheet" href="resources/css/report.css" />
+    <link rel="stylesheet" href="resources/css/heatmap.css" />
+    <script src="resources/js/modernizr.js"> </script>
+    <script src="resources/js/jquery.js"> </script>
+    <script src="resources/js/jquery-ui.min.js"> </script>
+    <script src="resources/js/fastclick.js"> </script>
+    <script src="resources/js/foundation.js"> </script>
+    <script src="resources/js/foundation.tab.js"> </script>
+    <script src="resources/js/foundation.topbar.js"> </script>
+    <script src="resources/js/foundation.dropdown.js"> </script>
+    <script src="resources/js/jquery.dataTables.min.js"> </script>
+    <script src="resources/js/report.js"> </script>
+    <script src="resources/inc/share.js"> </script>
+    <script src="resources/js/d3.min.js"> </script>
+    <script src="resources/js/heatmap.js"> </script>
+    <script src="resources/js/helpers.js"> </script>
+    <script src="resources/js/advanced.analysis.js"> </script>
+    <link rel="shortcut icon" type="Image/x-icon" href="resources/img/nanostring_icon.png" />
+    <meta class="foundation-data-attribute-namespace" />
+    <meta class="foundation-mq-xxlarge" />
+    <meta class="foundation-mq-xlarge" />
+    <meta class="foundation-mq-large" />
+    <meta class="foundation-mq-medium" />
+    <meta class="foundation-mq-small" />
+    <meta class="foundation-data-attribute-namespace" />
+    <meta class="foundation-mq-xxlarge" />
+    <meta class="foundation-mq-xlarge" />
+    <meta class="foundation-mq-large" />
+    <meta class="foundation-mq-medium" />
+    <meta class="foundation-mq-small" />
+    <meta class="foundation-mq-topbar" />
+    <meta class="foundation-mq-topbar" />
+    <meta class="foundation-mq-topbar" />
+  </head>
+  <body>
+    <nav class="top-bar" data-topbar="" data-options="is_hover: false" role="navigation">
+      <ul class="title-area">
+        <li class="name">
+          <h1>
+            <a href="http://www.nanostring.com">
+              <img src="resources/img/logo_nanostring_white_Flat_189x40.png" />
+            </a>
+          </h1>
+        </li>
+      </ul>
+      <section class="top-bar-section">
+        <ul class="right">
+      
+        <li class="active"><a href="javascript:ShowContent('ULFu_7-xiaLT4hE9u9s3cQw')">Overview</a></li>
+        <li><a href="javascript:ShowContent('UqWuHjesj-_-CPzfxWVp58Q')">Cell Type Profiling</a></li>
+        <li><a href="javascript:ShowContent('UgJSZ36tfOj9Lv9WE-UAU3Q')">Analysis Parameters</a></li>
+      
+    <li class="share-report"><a href="AdvAnalysisReport.zip">Share</a></li></ul>
+      </section>
+    </nav>
+    <div class="row">
+      
+        
+          
+            <div id="ULFu_7-xiaLT4hE9u9s3cQw" class="panelContent" style="display:block"><div class="row"><div class="panel"><p>This module generates a series of high level plots that describe the data overall and may be useful for identifying anomalous data and/or covariates.</p></div></div><div class="row"><div class="small-12 columns">
+              
+                <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Gene sets:</p>
+                  
+                    <li class="tab-title active"><a href="#U5WP8n1ap0gvp2mvI5hu36w">Summary</a></li>
+                  
+                </ul></div><div class="tabs-content">
+                  
+                    
+                      
+                        <div id="U5WP8n1ap0gvp2mvI5hu36w" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                          
+                            <dl class="button-group radius"><li><a class="small button active" href="#" data-dropdown="drop-Ue4fBTGUi0K6a3UIZy2EXWw" title="Heatmaps">Heatmaps</a></li><li><a class="small button" href="#" data-dropdown="drop-UGcyv357jNP2Y8IH9RjHRrw" title="PCA">PCA</a></li><li><a class="small button" href="#" data-dropdown="drop-U23vvzqJuW63fGNPtgvG0eg" title="Study design">Study design</a></li><li><a class="small button" href="#" data-dropdown="drop-URDO2JI2a4XDN-Zk8osGCaQ" title="Other QC">Other QC</a></li></dl><ul id="drop-Ue4fBTGUi0K6a3UIZy2EXWw" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                              
+                                <li class="active"><a menuindex="Heatmaps|Heatmaps" href="#UoEJXAnpaQcc4Vo5y6qasrA">Heatmaps</a></li>
+                              
+                            </ul><ul id="drop-UGcyv357jNP2Y8IH9RjHRrw" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                              
+                                <li><a menuindex="PCA|Drug" href="#UYGDaDbOQ6e7FHm9YuKNRnA">Drug</a></li>
+                                <li><a menuindex="PCA|Dosage" href="#UncpAawtKB_Ph4DYkRD6mNQ">Dosage</a></li>
+                                <li><a menuindex="PCA|Day" href="#UpsZK6r32lTF27lAYT620pg">Day</a></li>
+                              
+                            </ul><ul id="drop-U23vvzqJuW63fGNPtgvG0eg" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                              
+                                <li><a menuindex="Study design|Covariates" href="#U0O4EAIH6GrmXFZe1nr0Cdg">Covariates</a></li>
+                              
+                            </ul><ul id="drop-URDO2JI2a4XDN-Zk8osGCaQ" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                              
+                                <li><a menuindex="Other QC|Other QC" href="#UdLJ5qOajDxW5Yg9q2AQDsQ">Other QC</a></li>
+                              
+                            </ul><div class="tabs-content">
+                            
+                              
+                                
+                                  
+                                    <div id="UoEJXAnpaQcc4Vo5y6qasrA" class="content active"><div class="small-12 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                                      
+                                        <li><p><b>Heatmap of Raw Data<br /><a href="#" onclick="openPopup('UTcPLX0AhDFWn7XRG6-j1tQ_UQh1YWZvRyUX_kmCGIztRmQ');return false;"><span class="label round">More Plot Information</span></a>  <a href="./results/QC/above background detection call.csv"><span class="label round">Download detected/undetected calls data</span></a></b></p><a href="#" onclick="openInteractiveHeatmapPopup('UQh1YWZvRyUX_kmCGIztRmQ');return false;"><div class="small-9 columns"><image src="./results/QC/raw data heatmap.png" /></div><div class="small-3 columns"><image src="./results/QC/raw data heatmap - color key.png" /></div></a><div id="UQh1YWZvRyUX_kmCGIztRmQ" class="heatmap_pop_up"><div class="image_pop_up_content small-12 columns"><div id="ih-div-UQh1YWZvRyUX_kmCGIztRmQ" /></div></div><div id="UTcPLX0AhDFWn7XRG6-j1tQ_UQh1YWZvRyUX_kmCGIztRmQ" class="annotation_pop_up"><h5>Heatmap of Raw Data</h5><p>Heatmap of the raw counts. The plot is meant to provide an overview of how robust the raw expression levels are across samples and gene sets. Datasets that entirely lack higher level expressions (e.g. counts &gt; 100) may indicate experimental failure or low input. The detected/undetected calls links to a .csv file stating whether each probe is above background, with 0/1 indicating below/above background. If the user has not specified a detection threshold, probes are called detected if they have more than double the counts of the median negative control.</p></div></li>
+                                        <li><p><b>Heatmap of All Data<br /><a href="#" onclick="openPopup('UB9DF-SbN2-tvUgxUJw-L2g_UyySR3RU_9hQ_hWdumMiueg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openInteractiveHeatmapPopup('UyySR3RU_9hQ_hWdumMiueg');return false;"><div class="small-9 columns"><image src="./results/QC/heatmap of all genes X samples.png" /></div><div class="small-3 columns"><image src="./results/QC/normalized data heatmap - color key.png" /></div></a><div id="UyySR3RU_9hQ_hWdumMiueg" class="heatmap_pop_up"><div class="image_pop_up_content small-12 columns"><div id="ih-div-UyySR3RU_9hQ_hWdumMiueg" /></div></div><div id="UB9DF-SbN2-tvUgxUJw-L2g_UyySR3RU_9hQ_hWdumMiueg" class="annotation_pop_up"><h5>Heatmap of All Data</h5><p>Heatmap of the normalized data, scaled to give all genes equal variance, generated via unsupervised clustering. Orange indicates high expression; blue indicates low expression. This plot is meant to provide a high level exploratory view of the data.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            
+                            
+                              
+                                
+                                  
+                                    <div id="UYGDaDbOQ6e7FHm9YuKNRnA" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Principal Components of All Data<br /><a href="#" onclick="openPopup('URZEC0kb7QZVDEJbscGGcRA_UypdXjHIUYXTnhyeiLSmnaw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UypdXjHIUYXTnhyeiLSmnaw');return false;"><div class="small-9 columns"><image src="./results/QC/PCA colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UypdXjHIUYXTnhyeiLSmnaw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/QC/PCA colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="URZEC0kb7QZVDEJbscGGcRA_UypdXjHIUYXTnhyeiLSmnaw" class="annotation_pop_up"><h5>Principal Components of All Data</h5><p>Principal component analysis maps high-dimensional datasets onto a smaller number of highly informative dimensions. Here, the first four principal components of the gene expression data are plotted against each other and colored by the values of the selected covariate. This plot may be used to identify clusters in the data and to identify variables associated with prominent signal in the data. Variables that are associated with these leading principal components should be considered in downstream analyses.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UncpAawtKB_Ph4DYkRD6mNQ" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Principal Components of All Data<br /><a href="#" onclick="openPopup('URZEC0kb7QZVDEJbscGGcRA_UtMoCJw48y1tLCfzjQh6GNA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UtMoCJw48y1tLCfzjQh6GNA');return false;"><div class="small-9 columns"><image src="./results/QC/PCA colored by Dosage.png" /></div><div class="small-3 columns"><image src="./results/color legend - Dosage.png" /></div></a><div id="UtMoCJw48y1tLCfzjQh6GNA" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/QC/PCA colored by Dosage.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Dosage.png" /></div></div><div id="URZEC0kb7QZVDEJbscGGcRA_UtMoCJw48y1tLCfzjQh6GNA" class="annotation_pop_up"><h5>Principal Components of All Data</h5><p>Principal component analysis maps high-dimensional datasets onto a smaller number of highly informative dimensions. Here, the first four principal components of the gene expression data are plotted against each other and colored by the values of the selected covariate. This plot may be used to identify clusters in the data and to identify variables associated with prominent signal in the data. Variables that are associated with these leading principal components should be considered in downstream analyses.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UpsZK6r32lTF27lAYT620pg" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Principal Components of All Data<br /><a href="#" onclick="openPopup('URZEC0kb7QZVDEJbscGGcRA_UnHCFdrqdgsGNMMcDg0vqPA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UnHCFdrqdgsGNMMcDg0vqPA');return false;"><div class="small-9 columns"><image src="./results/QC/PCA colored by Day.png" /></div><div class="small-3 columns"><image src="./results/color legend - Day.png" /></div></a><div id="UnHCFdrqdgsGNMMcDg0vqPA" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/QC/PCA colored by Day.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Day.png" /></div></div><div id="URZEC0kb7QZVDEJbscGGcRA_UnHCFdrqdgsGNMMcDg0vqPA" class="annotation_pop_up"><h5>Principal Components of All Data</h5><p>Principal component analysis maps high-dimensional datasets onto a smaller number of highly informative dimensions. Here, the first four principal components of the gene expression data are plotted against each other and colored by the values of the selected covariate. This plot may be used to identify clusters in the data and to identify variables associated with prominent signal in the data. Variables that are associated with these leading principal components should be considered in downstream analyses.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            
+                            
+                              
+                                
+                                  
+                                    <div id="U0O4EAIH6GrmXFZe1nr0Cdg" class="content"><div class="small-12 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                                      
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_Ur2yF3zhxfRWv8sQEdMuRYA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Ur2yF3zhxfRWv8sQEdMuRYA');return false;"><div class="small-12 columns"><image src="./results/QC/univariate plot of covariates - Day.png" /></div></a><div id="Ur2yF3zhxfRWv8sQEdMuRYA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/univariate plot of covariates - Day.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_Ur2yF3zhxfRWv8sQEdMuRYA" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_U49Oar-yOgITdD2h29_skhg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U49Oar-yOgITdD2h29_skhg');return false;"><div class="small-12 columns"><image src="./results/QC/univariate plot of covariates - Dosage.png" /></div></a><div id="U49Oar-yOgITdD2h29_skhg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/univariate plot of covariates - Dosage.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_U49Oar-yOgITdD2h29_skhg" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_UE012fbWMbggFF5p_EY-RcA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UE012fbWMbggFF5p_EY-RcA');return false;"><div class="small-12 columns"><image src="./results/QC/univariate plot of covariates - Drug.png" /></div></a><div id="UE012fbWMbggFF5p_EY-RcA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/univariate plot of covariates - Drug.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_UE012fbWMbggFF5p_EY-RcA" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_UYnY3H0kuEX1xt7fpDrCkMg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UYnY3H0kuEX1xt7fpDrCkMg');return false;"><div class="small-12 columns"><image src="./results/QC/pairs plot of covariates - Dosage vs Day.png" /></div></a><div id="UYnY3H0kuEX1xt7fpDrCkMg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/pairs plot of covariates - Dosage vs Day.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_UYnY3H0kuEX1xt7fpDrCkMg" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_U7qtqkR4tc0klPTkkm4OdOg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U7qtqkR4tc0klPTkkm4OdOg');return false;"><div class="small-12 columns"><image src="./results/QC/pairs plot of covariates - Drug vs Day.png" /></div></a><div id="U7qtqkR4tc0klPTkkm4OdOg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/pairs plot of covariates - Drug vs Day.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_U7qtqkR4tc0klPTkkm4OdOg" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                        <li><p><b><br /><a href="#" onclick="openPopup('UTO5fqmQLelAKMcrSCUf8Bg_URxyLKEr74V9EjMexkw5pTQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('URxyLKEr74V9EjMexkw5pTQ');return false;"><div class="small-12 columns"><image src="./results/QC/pairs plot of covariates - Drug vs Dosage.png" /></div></a><div id="URxyLKEr74V9EjMexkw5pTQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/pairs plot of covariates - Drug vs Dosage.png" style="width: 100%;" /></div></div><div id="UTO5fqmQLelAKMcrSCUf8Bg_URxyLKEr74V9EjMexkw5pTQ" class="annotation_pop_up"><h5></h5><p>Pairwise comparisons of all covariates in the analysis. The type of plot is dependent on the types of variables compared; A categorical vs. categorical covariate plot is shown as a bar chart of counts (Y axis). Continuous vs. categorical covariates generate a boxplot with whiskers denoting 1.5 IQR. Continuous vs. continuous covariates are compared via a scatter plot. Variables that are correlated with a biological variable of interest are potential confounders that may influence downstream analyses. Additionally, bar plots and histograms show the distributions of categorical and continuous variables, respectively.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            
+                            
+                              
+                                
+                                  
+                                    <div id="UdLJ5qOajDxW5Yg9q2AQDsQ" class="content"><div class="small-12 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                                      
+                                        <li><p><b>Variance vs. Mean normalized signal plot across all targets/probes<br /><a href="#" onclick="openPopup('Uia-4G0f8ZajKI2LEHseQGA_UV_rAwzIfsyQnOHSDocfmRA');return false;"><span class="label round">More Plot Information</span></a>  <a href="./results/QC/QC module - Mean.Var.normalized.counts.csv"><span class="label round">Mean and Variance statistics across all genes</span></a></b></p><a href="#" onclick="openImagePopup('UV_rAwzIfsyQnOHSDocfmRA');return false;"><div class="small-12 columns"><image src="./results/QC/mean vs var for all genes.png" /></div></a><div id="UV_rAwzIfsyQnOHSDocfmRA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/mean vs var for all genes.png" style="width: 100%;" /></div></div><div id="Uia-4G0f8ZajKI2LEHseQGA_UV_rAwzIfsyQnOHSDocfmRA" class="annotation_pop_up"><h5>Variance vs. Mean normalized signal plot across all targets/probes</h5><p>Each gene's variance in the log-scaled, normalized data is plotted against its mean value across all samples. Highly variable genes are indicated by gene name. Housekeeping genes are color coded according to their use in (or omission from) normalization.</p></div></li>
+                                        <li><p><b>p-value distribution plots<br /><a href="#" onclick="openPopup('UZivnbxg7treB5U6bs1M4Lg_UlGdrykQ_XClUjIvsKudbjg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UlGdrykQ_XClUjIvsKudbjg');return false;"><div class="small-12 columns"><image src="./results/QC/p-value histograms.png" /></div></a><div id="UlGdrykQ_XClUjIvsKudbjg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/QC/p-value histograms.png" style="width: 100%;" /></div></div><div id="UZivnbxg7treB5U6bs1M4Lg_UlGdrykQ_XClUjIvsKudbjg" class="annotation_pop_up"><h5>p-value distribution plots</h5><p>For each covariate included in the analysis, a histogram of p-values testing each gene's univariate association with the chosen covariate is displayed. Covariates with largely flat histograms have minimal association with gene expression; covariates with histograms with significantly more mass on the left are either associated with the expression of many genes or are confounded with a covariate that is associated with the expression. Low p-values indicate strong evidence for an association.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            
+                          </div>
+                            
+                            
+                            
+                          
+                        </ul></div></div>
+                      
+                    
+                  
+                </div>
+              
+            </div></div></div>
+          
+        
+        
+          
+            <div id="UqWuHjesj-_-CPzfxWVp58Q" class="panelContent" style="display:none"><div class="row"><div class="panel"><p>Genes previously shown to be characteristic of various cell populations are used to measure these populations' abundance.
+        QC plots explore the validity of each cell type's measurements, Summary plots explore the joint behavior of cell types, and Covariates plots compare cell type measurements to covariates.
+        In addition to raw cell type abundance measurements, relative abundances measuring various contrasts between cell types are reported.</p></div></div><div class="row"><div class="panel"><ul class="small-block-grid-2 medium-block-grid-3">
+              
+                <dl class="button-group radius"><li><a class="small button active" href="#" data-dropdown="drop-UCej8QE8aElnIPoMjdHvf9A" title="QC">QC</a></li><li><a class="small button" href="#" data-dropdown="drop-UHKArn-Gt25gVXtASYJ6Xww" title="Summary">Summary</a></li><li><a class="small button" href="#" data-dropdown="drop-Uo1Mdo-I41UYqQ4itK9ryQg" title="Covariates">Covariates</a></li></dl><ul id="drop-UCej8QE8aElnIPoMjdHvf9A" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                  
+                    <li class="active"><a menuindex="QC|QC" href="#UYKWd1ysW5lU6PX6kW2g5KQ">QC</a></li>
+                  
+                </ul><ul id="drop-UHKArn-Gt25gVXtASYJ6Xww" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                  
+                    <li><a menuindex="Summary|Raw" href="#ULex0RwKLXEaPEhJkGAwk7w">Raw</a></li>
+                    <li><a menuindex="Summary|Relative" href="#UnqCRqk_PTG-RPUFEcZqmLg">Relative</a></li>
+                  
+                </ul><ul id="drop-Uo1Mdo-I41UYqQ4itK9ryQg" class="content f-dropdown" data-dropdown-content="" data-tab=""><!--Drop-down menu - This comment is a workaround for an apparent bug with empty elements not closing.-->
+                  
+                    <li><a menuindex="Covariates|Raw" href="#UuyqSJehbZCs5XzwDT8mFSg">Raw</a></li>
+                    <li><a menuindex="Covariates|Relative" href="#UHTx_9zIjb8-JXXbEqMb6Ew">Relative</a></li>
+                  
+                </ul><div class="tabs-content">
+                
+                  
+                    
+                      
+                        <div id="UYKWd1ysW5lU6PX6kW2g5KQ" class="content active"><div class="small-12 columns"><ul class="small-block-grid-1">
+                          
+                            <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Choose a Cell Type:</p>
+                              
+                                <li class="tab-title active"><a href="#UX0cwH4N2F8YPHih5Cj7w8A">Summary</a></li>
+                                <li class="tab-title"><a href="#U541CA4R5Msk87v2O42i0Ng">B-cells</a></li>
+                                <li class="tab-title"><a href="#UDT5t05pjk3Ji23aXUYALVQ">CD45</a></li>
+                                <li class="tab-title"><a href="#UQqd4JMvlfBCsu_5t4U9I2Q">Cytotoxic cells</a></li>
+                                <li class="tab-title"><a href="#UpUyz-3kTq30zFJ-fjok95w">Exhausted CD8</a></li>
+                                <li class="tab-title"><a href="#UgTI7SZT8t4VmYUUA52c1Mg">Macrophages</a></li>
+                                <li class="tab-title"><a href="#UVsw8HK4cQVeuXqcL00RGqA">Mast cells</a></li>
+                                <li class="tab-title"><a href="#UdFdBr31PmArME0iHKezM5w">Neutrophils</a></li>
+                                <li class="tab-title"><a href="#U6Ivnb_Wexa8yNO3jxg98Qg">NK CD56dim cells</a></li>
+                                <li class="tab-title"><a href="#UuV7fgNhl8lpXi5Ure45Rlg">NK cells</a></li>
+                                <li class="tab-title"><a href="#UYrhJNBSyMPN4rtNylXs_cA">T-cells</a></li>
+                              
+                            </ul></div><div class="tabs-content">
+                              
+                                
+                                  
+                                    <div id="UX0cwH4N2F8YPHih5Cj7w8A" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Barplot of p-values across cell types<br /><a href="#" onclick="openPopup('U4-0HZkVRniYq8i4aa3mzHA_U4-0HZkVRniYq8i4aa3mzHA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U4-0HZkVRniYq8i4aa3mzHA');return false;"><div class="small-12 columns"><image src="./results/cell types/barplot of p-values of cell types.png" /></div></a><div id="U4-0HZkVRniYq8i4aa3mzHA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/barplot of p-values of cell types.png" style="width: 100%;" /></div></div><div id="U4-0HZkVRniYq8i4aa3mzHA_U4-0HZkVRniYq8i4aa3mzHA" class="annotation_pop_up"><h5>Barplot of p-values across cell types</h5><p>Barplot of p-values across cell types. p-values are -log10 transformed. Bars above the solid black line indicate statistically significant cell types at an alpha level of 0.01. Bars above the dashed black line indicate statistically significant cell types at an alpha level of 0.001.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U541CA4R5Msk87v2O42i0Ng" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: B-cells<br /><a href="#" onclick="openPopup('UTMWGKwmy0bDf89lOJ0GChg_UTMWGKwmy0bDf89lOJ0GChg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UTMWGKwmy0bDf89lOJ0GChg');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - B-cells.png" /></div></a><div id="UTMWGKwmy0bDf89lOJ0GChg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - B-cells.png" style="width: 100%;" /></div></div><div id="UTMWGKwmy0bDf89lOJ0GChg_UTMWGKwmy0bDf89lOJ0GChg" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: B-cells</h5><p>Normalized expression of the genes characteristic of B-cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UDT5t05pjk3Ji23aXUYALVQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: CD45<br /><a href="#" onclick="openPopup('UeNXLNPf6w5AgOW7NyuM2Pg_UeNXLNPf6w5AgOW7NyuM2Pg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UeNXLNPf6w5AgOW7NyuM2Pg');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - CD45.png" /></div></a><div id="UeNXLNPf6w5AgOW7NyuM2Pg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - CD45.png" style="width: 100%;" /></div></div><div id="UeNXLNPf6w5AgOW7NyuM2Pg_UeNXLNPf6w5AgOW7NyuM2Pg" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: CD45</h5><p>Normalized expression of the genes characteristic of CD45.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UQqd4JMvlfBCsu_5t4U9I2Q" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: Cytotoxic cells<br /><a href="#" onclick="openPopup('UyCT2VQwLONS3JmBL67WmMQ_UyCT2VQwLONS3JmBL67WmMQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UyCT2VQwLONS3JmBL67WmMQ');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - Cytotoxic cells.png" /></div></a><div id="UyCT2VQwLONS3JmBL67WmMQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - Cytotoxic cells.png" style="width: 100%;" /></div></div><div id="UyCT2VQwLONS3JmBL67WmMQ_UyCT2VQwLONS3JmBL67WmMQ" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: Cytotoxic cells</h5><p>Normalized expression of the genes characteristic of Cytotoxic cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UpUyz-3kTq30zFJ-fjok95w" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: Exhausted CD8<br /><a href="#" onclick="openPopup('UhcpyW9cA3SWVoy77a-TCIQ_UhcpyW9cA3SWVoy77a-TCIQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UhcpyW9cA3SWVoy77a-TCIQ');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - Exhausted CD8.png" /></div></a><div id="UhcpyW9cA3SWVoy77a-TCIQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - Exhausted CD8.png" style="width: 100%;" /></div></div><div id="UhcpyW9cA3SWVoy77a-TCIQ_UhcpyW9cA3SWVoy77a-TCIQ" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: Exhausted CD8</h5><p>Normalized expression of the genes characteristic of Exhausted CD8.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UgTI7SZT8t4VmYUUA52c1Mg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: Macrophages<br /><a href="#" onclick="openPopup('UW1uPi2wKxMETGmRWfukWkA_UW1uPi2wKxMETGmRWfukWkA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UW1uPi2wKxMETGmRWfukWkA');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - Macrophages.png" /></div></a><div id="UW1uPi2wKxMETGmRWfukWkA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - Macrophages.png" style="width: 100%;" /></div></div><div id="UW1uPi2wKxMETGmRWfukWkA_UW1uPi2wKxMETGmRWfukWkA" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: Macrophages</h5><p>Normalized expression of the genes characteristic of Macrophages.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UVsw8HK4cQVeuXqcL00RGqA" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: Mast cells<br /><a href="#" onclick="openPopup('UnN5so8kqLuuu4wvnB50tIw_UnN5so8kqLuuu4wvnB50tIw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UnN5so8kqLuuu4wvnB50tIw');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - Mast cells.png" /></div></a><div id="UnN5so8kqLuuu4wvnB50tIw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - Mast cells.png" style="width: 100%;" /></div></div><div id="UnN5so8kqLuuu4wvnB50tIw_UnN5so8kqLuuu4wvnB50tIw" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: Mast cells</h5><p>Normalized expression of the genes characteristic of Mast cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UdFdBr31PmArME0iHKezM5w" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: Neutrophils<br /><a href="#" onclick="openPopup('UH9XYrxYggmo9CJzvKIZj-g_UH9XYrxYggmo9CJzvKIZj-g');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UH9XYrxYggmo9CJzvKIZj-g');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - Neutrophils.png" /></div></a><div id="UH9XYrxYggmo9CJzvKIZj-g" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - Neutrophils.png" style="width: 100%;" /></div></div><div id="UH9XYrxYggmo9CJzvKIZj-g_UH9XYrxYggmo9CJzvKIZj-g" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: Neutrophils</h5><p>Normalized expression of the genes characteristic of Neutrophils.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U6Ivnb_Wexa8yNO3jxg98Qg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: NK CD56dim cells<br /><a href="#" onclick="openPopup('UVhijNPgQwcBHPMqwGfTETg_UVhijNPgQwcBHPMqwGfTETg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UVhijNPgQwcBHPMqwGfTETg');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - NK CD56dim cells.png" /></div></a><div id="UVhijNPgQwcBHPMqwGfTETg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - NK CD56dim cells.png" style="width: 100%;" /></div></div><div id="UVhijNPgQwcBHPMqwGfTETg_UVhijNPgQwcBHPMqwGfTETg" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: NK CD56dim cells</h5><p>Normalized expression of the genes characteristic of NK CD56dim cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UuV7fgNhl8lpXi5Ure45Rlg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: NK cells<br /><a href="#" onclick="openPopup('UtAUTw4tm0eacbWkllSrWbQ_UtAUTw4tm0eacbWkllSrWbQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UtAUTw4tm0eacbWkllSrWbQ');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - NK cells.png" /></div></a><div id="UtAUTw4tm0eacbWkllSrWbQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - NK cells.png" style="width: 100%;" /></div></div><div id="UtAUTw4tm0eacbWkllSrWbQ_UtAUTw4tm0eacbWkllSrWbQ" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: NK cells</h5><p>Normalized expression of the genes characteristic of NK cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UYrhJNBSyMPN4rtNylXs_cA" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>QC Plot for Cell Type Measurements: T-cells<br /><a href="#" onclick="openPopup('UDPfItxyva8kJ03-788fc5w_UDPfItxyva8kJ03-788fc5w');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UDPfItxyva8kJ03-788fc5w');return false;"><div class="small-12 columns"><image src="./results/cell types/QC for cell scores - T-cells.png" /></div></a><div id="UDPfItxyva8kJ03-788fc5w" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/QC for cell scores - T-cells.png" style="width: 100%;" /></div></div><div id="UDPfItxyva8kJ03-788fc5w_UDPfItxyva8kJ03-788fc5w" class="annotation_pop_up"><h5>QC Plot for Cell Type Measurements: T-cells</h5><p>Normalized expression of the genes characteristic of T-cells.  
+                                                  If a cell type's characteristic genes are specific to the cell type and stably expressed within it, they will be strongly correlated with a slope of 1. Substantial departures from this pattern indicate noisier quantification of cell type abundance.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            </div>
+                          
+                        </ul></div></div>
+                      
+                    
+                  
+                
+                
+                  
+                    
+                      
+                        <div id="ULex0RwKLXEaPEhJkGAwk7w" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                          
+                            <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Choose a Cell Type:</p>
+                              
+                                <li class="tab-title active"><a href="#UG8Ocgw_IJzB2gagV7KjRuw">Summary</a></li>
+                                <li class="tab-title"><a href="#UyyyeeLBNViGvoOjv4v09QQ">Cytotoxic cells</a></li>
+                                <li class="tab-title"><a href="#UOzSzKxe7eHwkGYSdT-Vz5w">Macrophages</a></li>
+                                <li class="tab-title"><a href="#UYfHN_J5HkSCqa_FOxfmzoQ">Exhausted CD8</a></li>
+                                <li class="tab-title"><a href="#UtRd45B9ZHoPnimiYB4kQlw">B-cells</a></li>
+                                <li class="tab-title"><a href="#ULLp9nXNmtTQO0_zT8IHYug">CD45</a></li>
+                                <li class="tab-title"><a href="#UqMJ9ewyWu40bK81CcOEd8Q">Neutrophils</a></li>
+                                <li class="tab-title"><a href="#U97a0TCJ1gMnHw7J4b2aBjw">T-cells</a></li>
+                                <li class="tab-title"><a href="#UiJlM3Ic3DS9OvYPS2CKSfg">NK CD56dim cells</a></li>
+                                <li class="tab-title"><a href="#UFsCV4A4LZt4Inz8tm3AQ-g">Mast cells</a></li>
+                                <li class="tab-title"><a href="#U92adKhf-VPQ4nQwPt6Umow">NK cells</a></li>
+                              
+                            </ul></div><div class="tabs-content">
+                              
+                                
+                                  
+                                    <div id="UG8Ocgw_IJzB2gagV7KjRuw" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                                      
+                                        <li><p><b>Heatmap of Raw cell type measurements<br /><a href="#" onclick="openPopup('URl0hvfUtLRFc9f09t_rWyA_UVVfjPB-x_QFG3aWN705JRA');return false;"><span class="label round">More Plot Information</span></a>  <a href="./results/cell types/cell type scores - raw.csv"><span class="label round">Download raw cell type measurements</span></a></b></p><a href="#" onclick="openImagePopup('UVVfjPB-x_QFG3aWN705JRA');return false;"><div class="small-9 columns"><image src="./results/cell types/heatmap of cell types scores - raw.png" /></div><div class="small-3 columns"><image src="./results/color legend.png" /></div></a><div id="UVVfjPB-x_QFG3aWN705JRA" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/heatmap of cell types scores - raw.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend.png" /></div></div><div id="URl0hvfUtLRFc9f09t_rWyA_UVVfjPB-x_QFG3aWN705JRA" class="annotation_pop_up"><h5>Heatmap of Raw cell type measurements</h5><p>Heatmap showing raw abundance of cell types. Orange indicates high abundance; blue indicates low abundance. Note that our methods do not support the conclusion that one cell type is more abundant than another.  Rather, they support the claim that a given cell type is more abundant in one sample than in another.</p></div></li>
+                                        <li><p><b>Heatmap of Correlation Matrix of Raw cell type measurements<br /><a href="#" onclick="openPopup('Um9yj67wZZ5Kfa0DQcnhmjw_UcNADbTe48ZGBOHLZ8d9Qaw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UcNADbTe48ZGBOHLZ8d9Qaw');return false;"><div class="small-12 columns"><image src="./results/cell types/cell type scores correlation heatmap - raw.png" /></div></a><div id="UcNADbTe48ZGBOHLZ8d9Qaw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/cell type scores correlation heatmap - raw.png" style="width: 100%;" /></div></div><div id="Um9yj67wZZ5Kfa0DQcnhmjw_UcNADbTe48ZGBOHLZ8d9Qaw" class="annotation_pop_up"><h5>Heatmap of Correlation Matrix of Raw cell type measurements</h5><p>Heatmap showing the correlation matrix of raw cell abundance. Orange and blue indicate positive and negative correlation, respectively.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UyyyeeLBNViGvoOjv4v09QQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Cytotoxic cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UM8CsUOQ6-9NENYMUZy1LQw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UM8CsUOQ6-9NENYMUZy1LQw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - Cytotoxic cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UM8CsUOQ6-9NENYMUZy1LQw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - Cytotoxic cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UM8CsUOQ6-9NENYMUZy1LQw" class="annotation_pop_up"><h5>Cytotoxic cells measurements vs. other cell type measurements</h5><p>Each panel plots Cytotoxic cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UOzSzKxe7eHwkGYSdT-Vz5w" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Macrophages measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_ULwvfI7t-kBgFdVb9gHNVNQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('ULwvfI7t-kBgFdVb9gHNVNQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - Macrophages - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="ULwvfI7t-kBgFdVb9gHNVNQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - Macrophages - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_ULwvfI7t-kBgFdVb9gHNVNQ" class="annotation_pop_up"><h5>Macrophages measurements vs. other cell type measurements</h5><p>Each panel plots Macrophages against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UYfHN_J5HkSCqa_FOxfmzoQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Exhausted CD8 measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UdqelXwwgbTUAn7_-FjMOJQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UdqelXwwgbTUAn7_-FjMOJQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - Exhausted CD8 - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UdqelXwwgbTUAn7_-FjMOJQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - Exhausted CD8 - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UdqelXwwgbTUAn7_-FjMOJQ" class="annotation_pop_up"><h5>Exhausted CD8 measurements vs. other cell type measurements</h5><p>Each panel plots Exhausted CD8 against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UtRd45B9ZHoPnimiYB4kQlw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>B-cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UYlr4C2TRnGUr5EB2B6GMUw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UYlr4C2TRnGUr5EB2B6GMUw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - B-cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UYlr4C2TRnGUr5EB2B6GMUw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - B-cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UYlr4C2TRnGUr5EB2B6GMUw" class="annotation_pop_up"><h5>B-cells measurements vs. other cell type measurements</h5><p>Each panel plots B-cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="ULLp9nXNmtTQO0_zT8IHYug" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>CD45 measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UClSYujnvwKCBUP7avACyOg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UClSYujnvwKCBUP7avACyOg');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - CD45 - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UClSYujnvwKCBUP7avACyOg" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - CD45 - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UClSYujnvwKCBUP7avACyOg" class="annotation_pop_up"><h5>CD45 measurements vs. other cell type measurements</h5><p>Each panel plots CD45 against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UqMJ9ewyWu40bK81CcOEd8Q" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Neutrophils measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UzK3hz_IXFlijJLVc9bOKqQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UzK3hz_IXFlijJLVc9bOKqQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - Neutrophils - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UzK3hz_IXFlijJLVc9bOKqQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - Neutrophils - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UzK3hz_IXFlijJLVc9bOKqQ" class="annotation_pop_up"><h5>Neutrophils measurements vs. other cell type measurements</h5><p>Each panel plots Neutrophils against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U97a0TCJ1gMnHw7J4b2aBjw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>T-cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UQ5gGW4jn7XO90a9yPrpwMg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UQ5gGW4jn7XO90a9yPrpwMg');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - T-cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UQ5gGW4jn7XO90a9yPrpwMg" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - T-cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UQ5gGW4jn7XO90a9yPrpwMg" class="annotation_pop_up"><h5>T-cells measurements vs. other cell type measurements</h5><p>Each panel plots T-cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UiJlM3Ic3DS9OvYPS2CKSfg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK CD56dim cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UA8I2aY0mMyO0msh2oj04VQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UA8I2aY0mMyO0msh2oj04VQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - NK CD56dim cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UA8I2aY0mMyO0msh2oj04VQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - NK CD56dim cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UA8I2aY0mMyO0msh2oj04VQ" class="annotation_pop_up"><h5>NK CD56dim cells measurements vs. other cell type measurements</h5><p>Each panel plots NK CD56dim cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UFsCV4A4LZt4Inz8tm3AQ-g" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Mast cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UGuLCe4qy0tSmOMNEcJ5wPg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UGuLCe4qy0tSmOMNEcJ5wPg');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - Mast cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UGuLCe4qy0tSmOMNEcJ5wPg" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - Mast cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UGuLCe4qy0tSmOMNEcJ5wPg" class="annotation_pop_up"><h5>Mast cells measurements vs. other cell type measurements</h5><p>Each panel plots Mast cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U92adKhf-VPQ4nQwPt6Umow" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK cells measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UMr2TLsqif2xB2ljgIST71A_UBtSSNzrosbxbvmHCvmqRcQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UBtSSNzrosbxbvmHCvmqRcQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - raw - NK cells - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UBtSSNzrosbxbvmHCvmqRcQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - raw - NK cells - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UMr2TLsqif2xB2ljgIST71A_UBtSSNzrosbxbvmHCvmqRcQ" class="annotation_pop_up"><h5>NK cells measurements vs. other cell type measurements</h5><p>Each panel plots NK cells against another raw abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            </div>
+                          
+                        </ul></div></div>
+                      
+                    
+                    
+                      
+                        <div id="UnqCRqk_PTG-RPUFEcZqmLg" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                          
+                            <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Choose a Cell Type:</p>
+                              
+                                <li class="tab-title active"><a href="#UDAzr1HA0FOx1-FUEmTutuQ">Summary</a></li>
+                                <li class="tab-title"><a href="#UudpiK5yl0ewSgMJ-IQdCyA">Total.TILs</a></li>
+                                <li class="tab-title"><a href="#UtDc-UbuJp-UBwNeYCUvRTw">B.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UZYTZgNAC2pfoK3PDM0ByLw">Cytotoxic.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#U7XBnGEza7A2VNnVdRpCQQw">Exhausted.CD8.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#Uxp-f0vjtrZu-NH30pmYnrw">Macrophages.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UBRNB0U8_9rc643mQWzG44g">Mast.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UJY2wITBTShpvIBTjRQ5c9A">Neutrophils.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#Uxt5ndDenuuFgvq-JtAAEAg">NK.CD56dim.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UsbkIe3DyYz3-XNL0fs8YvQ">NK.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UaozNashhMBV01oe1c66idA">T.cells.vs..TILs</a></li>
+                              
+                            </ul></div><div class="tabs-content">
+                              
+                                
+                                  
+                                    <div id="UDAzr1HA0FOx1-FUEmTutuQ" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1 medium-block-grid-2">
+                                      
+                                        <li><p><b>Heatmap of Relative cell type measurements<br /><a href="#" onclick="openPopup('UDaVwFuTi1RzGbLC4Eq4szA_UzQosXXKlITxONFlU5vJcwQ');return false;"><span class="label round">More Plot Information</span></a>  <a href="./results/cell types/cell type scores - relative.csv"><span class="label round">Download relative cell type measurements</span></a></b></p><a href="#" onclick="openImagePopup('UzQosXXKlITxONFlU5vJcwQ');return false;"><div class="small-9 columns"><image src="./results/cell types/heatmap of cell types scores - relative.png" /></div><div class="small-3 columns"><image src="./results/color legend.png" /></div></a><div id="UzQosXXKlITxONFlU5vJcwQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/heatmap of cell types scores - relative.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend.png" /></div></div><div id="UDaVwFuTi1RzGbLC4Eq4szA_UzQosXXKlITxONFlU5vJcwQ" class="annotation_pop_up"><h5>Heatmap of Relative cell type measurements</h5><p>Heatmap showing relative abundance of cell types. Orange indicates high abundance; blue indicates low abundance. Note that our methods do not support the conclusion that one cell type is more abundant than another.  Rather, they support the claim that a given cell type is more abundant in one sample than in another.</p></div></li>
+                                        <li><p><b>Heatmap of Correlation Matrix of Relative cell type measurements<br /><a href="#" onclick="openPopup('U3F-A_5tkWoIpTrG2d7G1rw_UudCVdQI956XbN5aDQdEEzA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UudCVdQI956XbN5aDQdEEzA');return false;"><div class="small-12 columns"><image src="./results/cell types/cell type scores correlation heatmap - relative.png" /></div></a><div id="UudCVdQI956XbN5aDQdEEzA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/cell type scores correlation heatmap - relative.png" style="width: 100%;" /></div></div><div id="U3F-A_5tkWoIpTrG2d7G1rw_UudCVdQI956XbN5aDQdEEzA" class="annotation_pop_up"><h5>Heatmap of Correlation Matrix of Relative cell type measurements</h5><p>Heatmap showing the correlation matrix of relative cell abundance. Orange and blue indicate positive and negative correlation, respectively.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UudpiK5yl0ewSgMJ-IQdCyA" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Total.TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_UeTKrM0YthWiu2lbGo61c_A');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UeTKrM0YthWiu2lbGo61c_A');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Total.TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UeTKrM0YthWiu2lbGo61c_A" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Total.TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_UeTKrM0YthWiu2lbGo61c_A" class="annotation_pop_up"><h5>Total.TILs measurements vs. other cell type measurements</h5><p>Each panel plots Total.TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UtDc-UbuJp-UBwNeYCUvRTw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>B.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_U-ZPhvU3zlZhdzIrtBS7KCQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U-ZPhvU3zlZhdzIrtBS7KCQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - B.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="U-ZPhvU3zlZhdzIrtBS7KCQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - B.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_U-ZPhvU3zlZhdzIrtBS7KCQ" class="annotation_pop_up"><h5>B.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots B.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UZYTZgNAC2pfoK3PDM0ByLw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Cytotoxic.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_UtkAPBePkJA8gVbjJUdeAnQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UtkAPBePkJA8gVbjJUdeAnQ');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Cytotoxic.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UtkAPBePkJA8gVbjJUdeAnQ" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Cytotoxic.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_UtkAPBePkJA8gVbjJUdeAnQ" class="annotation_pop_up"><h5>Cytotoxic.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots Cytotoxic.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U7XBnGEza7A2VNnVdRpCQQw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Exhausted.CD8.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_UciRPlr4OrryQWGdRrVWtyA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UciRPlr4OrryQWGdRrVWtyA');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Exhausted.CD8.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UciRPlr4OrryQWGdRrVWtyA" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Exhausted.CD8.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_UciRPlr4OrryQWGdRrVWtyA" class="annotation_pop_up"><h5>Exhausted.CD8.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots Exhausted.CD8.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Uxp-f0vjtrZu-NH30pmYnrw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Macrophages.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_UO_hERk3AfMrm_PpZ09G6pA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UO_hERk3AfMrm_PpZ09G6pA');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Macrophages.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UO_hERk3AfMrm_PpZ09G6pA" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Macrophages.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_UO_hERk3AfMrm_PpZ09G6pA" class="annotation_pop_up"><h5>Macrophages.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots Macrophages.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UBRNB0U8_9rc643mQWzG44g" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Mast.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_U4u6C6TAOPpAGBhpp5T-00A');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U4u6C6TAOPpAGBhpp5T-00A');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Mast.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="U4u6C6TAOPpAGBhpp5T-00A" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Mast.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_U4u6C6TAOPpAGBhpp5T-00A" class="annotation_pop_up"><h5>Mast.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots Mast.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UJY2wITBTShpvIBTjRQ5c9A" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Neutrophils.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_U8GKE_qjpYIaWbuWzspiuCw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U8GKE_qjpYIaWbuWzspiuCw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - Neutrophils.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="U8GKE_qjpYIaWbuWzspiuCw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - Neutrophils.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_U8GKE_qjpYIaWbuWzspiuCw" class="annotation_pop_up"><h5>Neutrophils.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots Neutrophils.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Uxt5ndDenuuFgvq-JtAAEAg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK.CD56dim.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_Uc4tXS9QxEEcfcceTyBylvw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Uc4tXS9QxEEcfcceTyBylvw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - NK.CD56dim.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="Uc4tXS9QxEEcfcceTyBylvw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - NK.CD56dim.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_Uc4tXS9QxEEcfcceTyBylvw" class="annotation_pop_up"><h5>NK.CD56dim.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots NK.CD56dim.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UsbkIe3DyYz3-XNL0fs8YvQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_UEEBfUkN62HIkhCDOropODw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UEEBfUkN62HIkhCDOropODw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - NK.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="UEEBfUkN62HIkhCDOropODw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - NK.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_UEEBfUkN62HIkhCDOropODw" class="annotation_pop_up"><h5>NK.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots NK.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UaozNashhMBV01oe1c66idA" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>T.cells.vs..TILs measurements vs. other cell type measurements<br /><a href="#" onclick="openPopup('UZKAy_K3w_9pd9ph2HPO-Tw_Usx0Y6eizU1icECRZVqLhNw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Usx0Y6eizU1icECRZVqLhNw');return false;"><div class="small-9 columns"><image src="./results/cell types/cell scores pairs plot - relative - T.cells.vs..TILs - colored by Drug.png" /></div><div class="small-3 columns"><image src="./results/color legend - Drug.png" /></div></a><div id="Usx0Y6eizU1icECRZVqLhNw" class="image_pop_up"><div class="image_pop_up_content small-10 columns"><img src="./results/cell types/cell scores pairs plot - relative - T.cells.vs..TILs - colored by Drug.png" style="width: 100%;" /></div><div class="small-2 columns"><image src="./results/color legend - Drug.png" /></div></div><div id="UZKAy_K3w_9pd9ph2HPO-Tw_Usx0Y6eizU1icECRZVqLhNw" class="annotation_pop_up"><h5>T.cells.vs..TILs measurements vs. other cell type measurements</h5><p>Each panel plots T.cells.vs..TILs against another relative abundance measurements.  Points are colored by Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            </div>
+                          
+                        </ul></div></div>
+                      
+                    
+                  
+                
+                
+                  
+                    
+                      
+                        <div id="UuyqSJehbZCs5XzwDT8mFSg" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                          
+                            <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Choose a Cell Type:</p>
+                              
+                                <li class="tab-title active"><a href="#UlCydPapCtinLcfNktD4Vww">Summary</a></li>
+                                <li class="tab-title"><a href="#Uu6_SBGGE7hYeeFbRHJ0gjQ">Cytotoxic cells</a></li>
+                                <li class="tab-title"><a href="#U-XX8tgibjKS7Io_8-ON4xw">Macrophages</a></li>
+                                <li class="tab-title"><a href="#USoIKNAj3AtRMPYiv-kfutw">Exhausted CD8</a></li>
+                                <li class="tab-title"><a href="#UnHunfjQtBb5Jo1leRdBA8Q">B-cells</a></li>
+                                <li class="tab-title"><a href="#UF5eb7GLsYNY99tGhPWeI-w">CD45</a></li>
+                                <li class="tab-title"><a href="#U_p6iH7rSoZ3sqdbHO9GWbQ">Neutrophils</a></li>
+                                <li class="tab-title"><a href="#Uiyzz_GOK89pQmouvePVTrg">T-cells</a></li>
+                                <li class="tab-title"><a href="#UZR4PeGrKsVtDMcwqAvaArw">NK CD56dim cells</a></li>
+                                <li class="tab-title"><a href="#Uq_Dsd7yCdRQFqmNvwCGEfg">Mast cells</a></li>
+                                <li class="tab-title"><a href="#UzM4aC5gCW4RXsu6oJUIavQ">NK cells</a></li>
+                              
+                            </ul></div><div class="tabs-content">
+                              
+                                
+                                  
+                                    <div id="UlCydPapCtinLcfNktD4Vww" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Raw cell type measurements vs. Drug<br /><a href="#" onclick="openPopup('Uzh9UcYA90JGktijJ-3LaeA_UiwxHIokU4nssCQZwA1ropw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UiwxHIokU4nssCQZwA1ropw');return false;"><div class="small-12 columns"><image src="./results/cell types/trend plot of cell type scores vs. Drug - raw - legend.png" /></div></a><div id="UiwxHIokU4nssCQZwA1ropw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/trend plot of cell type scores vs. Drug - raw - legend.png" style="width: 100%;" /></div></div><div id="Uzh9UcYA90JGktijJ-3LaeA_UiwxHIokU4nssCQZwA1ropw" class="annotation_pop_up"><h5>Raw cell type measurements vs. Drug</h5><p>Plots the raw cell type abundance measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Uu6_SBGGE7hYeeFbRHJ0gjQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Cytotoxic cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('U4XR35PeB2JK36Yggnv05Ng_UDu9IbVInSembXieJBYPohQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UDu9IbVInSembXieJBYPohQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - Cytotoxic cells.png" /></div></a><div id="UDu9IbVInSembXieJBYPohQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - Cytotoxic cells.png" style="width: 100%;" /></div></div><div id="U4XR35PeB2JK36Yggnv05Ng_UDu9IbVInSembXieJBYPohQ" class="annotation_pop_up"><h5>Cytotoxic cells Measurement vs. Drug</h5><p>Plots Cytotoxic cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U-XX8tgibjKS7Io_8-ON4xw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Macrophages Measurement vs. Drug<br /><a href="#" onclick="openPopup('USNXgLnFy5WI1t_0pwjLu9Q_UGXpJAKHBWRk08xieuvjgTw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UGXpJAKHBWRk08xieuvjgTw');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - Macrophages.png" /></div></a><div id="UGXpJAKHBWRk08xieuvjgTw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - Macrophages.png" style="width: 100%;" /></div></div><div id="USNXgLnFy5WI1t_0pwjLu9Q_UGXpJAKHBWRk08xieuvjgTw" class="annotation_pop_up"><h5>Macrophages Measurement vs. Drug</h5><p>Plots Macrophages measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="USoIKNAj3AtRMPYiv-kfutw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Exhausted CD8 Measurement vs. Drug<br /><a href="#" onclick="openPopup('UEt9z4_cT1Adeq7bPulAxLw_Uzz-2Ow6UgIiuFw_Itk7N2w');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Uzz-2Ow6UgIiuFw_Itk7N2w');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - Exhausted CD8.png" /></div></a><div id="Uzz-2Ow6UgIiuFw_Itk7N2w" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - Exhausted CD8.png" style="width: 100%;" /></div></div><div id="UEt9z4_cT1Adeq7bPulAxLw_Uzz-2Ow6UgIiuFw_Itk7N2w" class="annotation_pop_up"><h5>Exhausted CD8 Measurement vs. Drug</h5><p>Plots Exhausted CD8 measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UnHunfjQtBb5Jo1leRdBA8Q" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>B-cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('U9HC18ThvrAsaLe1ICT8deQ_Uo5BWHWgRfKyyci6KWaEaWQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Uo5BWHWgRfKyyci6KWaEaWQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - B-cells.png" /></div></a><div id="Uo5BWHWgRfKyyci6KWaEaWQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - B-cells.png" style="width: 100%;" /></div></div><div id="U9HC18ThvrAsaLe1ICT8deQ_Uo5BWHWgRfKyyci6KWaEaWQ" class="annotation_pop_up"><h5>B-cells Measurement vs. Drug</h5><p>Plots B-cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UF5eb7GLsYNY99tGhPWeI-w" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>CD45 Measurement vs. Drug<br /><a href="#" onclick="openPopup('UgazHLccFQQbDggfMXZjZrw_UMtYv2TRslwUcps8_W2Q30w');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UMtYv2TRslwUcps8_W2Q30w');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - CD45.png" /></div></a><div id="UMtYv2TRslwUcps8_W2Q30w" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - CD45.png" style="width: 100%;" /></div></div><div id="UgazHLccFQQbDggfMXZjZrw_UMtYv2TRslwUcps8_W2Q30w" class="annotation_pop_up"><h5>CD45 Measurement vs. Drug</h5><p>Plots CD45 measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U_p6iH7rSoZ3sqdbHO9GWbQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Neutrophils Measurement vs. Drug<br /><a href="#" onclick="openPopup('Udrw_O32V8gJiX5HT6lN8dQ_Unfz0lPkNhjgQhtnh_1dTCA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Unfz0lPkNhjgQhtnh_1dTCA');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - Neutrophils.png" /></div></a><div id="Unfz0lPkNhjgQhtnh_1dTCA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - Neutrophils.png" style="width: 100%;" /></div></div><div id="Udrw_O32V8gJiX5HT6lN8dQ_Unfz0lPkNhjgQhtnh_1dTCA" class="annotation_pop_up"><h5>Neutrophils Measurement vs. Drug</h5><p>Plots Neutrophils measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Uiyzz_GOK89pQmouvePVTrg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>T-cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('UHwCJ2eQHh7owlBaecZXl0Q_UNdZOkwTK6rB9bkJnTkQybQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UNdZOkwTK6rB9bkJnTkQybQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - T-cells.png" /></div></a><div id="UNdZOkwTK6rB9bkJnTkQybQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - T-cells.png" style="width: 100%;" /></div></div><div id="UHwCJ2eQHh7owlBaecZXl0Q_UNdZOkwTK6rB9bkJnTkQybQ" class="annotation_pop_up"><h5>T-cells Measurement vs. Drug</h5><p>Plots T-cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UZR4PeGrKsVtDMcwqAvaArw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK CD56dim cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('UIHG9bnp8EKlIL1xKwxWxGw_UYKHLPVTamaaJNNxRFtlgyQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UYKHLPVTamaaJNNxRFtlgyQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - NK CD56dim cells.png" /></div></a><div id="UYKHLPVTamaaJNNxRFtlgyQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - NK CD56dim cells.png" style="width: 100%;" /></div></div><div id="UIHG9bnp8EKlIL1xKwxWxGw_UYKHLPVTamaaJNNxRFtlgyQ" class="annotation_pop_up"><h5>NK CD56dim cells Measurement vs. Drug</h5><p>Plots NK CD56dim cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Uq_Dsd7yCdRQFqmNvwCGEfg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Mast cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('U0uewf77tNV63rHT8o_UIYg_URtxl0tmC2LrepBFpv36wbA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('URtxl0tmC2LrepBFpv36wbA');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - Mast cells.png" /></div></a><div id="URtxl0tmC2LrepBFpv36wbA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - Mast cells.png" style="width: 100%;" /></div></div><div id="U0uewf77tNV63rHT8o_UIYg_URtxl0tmC2LrepBFpv36wbA" class="annotation_pop_up"><h5>Mast cells Measurement vs. Drug</h5><p>Plots Mast cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UzM4aC5gCW4RXsu6oJUIavQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK cells Measurement vs. Drug<br /><a href="#" onclick="openPopup('UrnBGdfroLHAyQXFGzMY94Q_UVGA-5IXXrQXTUMYKtl0WJg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UVGA-5IXXrQXTUMYKtl0WJg');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - raw - NK cells.png" /></div></a><div id="UVGA-5IXXrQXTUMYKtl0WJg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - raw - NK cells.png" style="width: 100%;" /></div></div><div id="UrnBGdfroLHAyQXFGzMY94Q_UVGA-5IXXrQXTUMYKtl0WJg" class="annotation_pop_up"><h5>NK cells Measurement vs. Drug</h5><p>Plots NK cells measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            </div>
+                          
+                        </ul></div></div>
+                      
+                    
+                    
+                      
+                        <div id="UHTx_9zIjb8-JXXbEqMb6Ew" class="content"><div class="small-12 columns"><ul class="small-block-grid-1">
+                          
+                            <div class="small-2 columns"><ul class="tabs vertical" data-tab=""><p>Choose a Cell Type:</p>
+                              
+                                <li class="tab-title active"><a href="#U4TZGvVHAl7s0MvNi50lOEw">Summary</a></li>
+                                <li class="tab-title"><a href="#U5FiHGdQBuknAAoYUhHTTng">Total.TILs</a></li>
+                                <li class="tab-title"><a href="#UK9UW_n2RDeLszp8RqJDjuw">B.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UQpomumBtRnDoW6yHB51HLQ">Cytotoxic.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UoRUhM9lBqRvKHzTOe7xnMg">Exhausted.CD8.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#U1yGLlArpK27Af4RI4XK-dQ">Macrophages.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UhEJTYkmnxEg-WzFWVaRRbg">Mast.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UqVtu8QKoEavNzV4B-i-vzQ">Neutrophils.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#Un7eKuAiAG9puWyBvVgg9VA">NK.CD56dim.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#UATOMFMDrjsnyIViEFMqnrg">NK.cells.vs..TILs</a></li>
+                                <li class="tab-title"><a href="#Up3isyz1s69rSrXpokS6p6g">T.cells.vs..TILs</a></li>
+                              
+                            </ul></div><div class="tabs-content">
+                              
+                                
+                                  
+                                    <div id="U4TZGvVHAl7s0MvNi50lOEw" class="content active"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Relative cell type measurements vs. Drug<br /><a href="#" onclick="openPopup('Uzh9UcYA90JGktijJ-3LaeA_UoqtSUhqSRMxH8zWri4ERSQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UoqtSUhqSRMxH8zWri4ERSQ');return false;"><div class="small-12 columns"><image src="./results/cell types/trend plot of cell type scores vs. Drug - relative - legend.png" /></div></a><div id="UoqtSUhqSRMxH8zWri4ERSQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/trend plot of cell type scores vs. Drug - relative - legend.png" style="width: 100%;" /></div></div><div id="Uzh9UcYA90JGktijJ-3LaeA_UoqtSUhqSRMxH8zWri4ERSQ" class="annotation_pop_up"><h5>Relative cell type measurements vs. Drug</h5><p>Plots the relative cell type abundance measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U5FiHGdQBuknAAoYUhHTTng" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Total.TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UVo7N-gykkWvasbDcz6pHuQ_UB5ii_0y-DXlCZCwxwKlahg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UB5ii_0y-DXlCZCwxwKlahg');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Total.TILs.png" /></div></a><div id="UB5ii_0y-DXlCZCwxwKlahg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Total.TILs.png" style="width: 100%;" /></div></div><div id="UVo7N-gykkWvasbDcz6pHuQ_UB5ii_0y-DXlCZCwxwKlahg" class="annotation_pop_up"><h5>Total.TILs Measurement vs. Drug</h5><p>Plots Total.TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UK9UW_n2RDeLszp8RqJDjuw" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>B.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UWftrTCKFwhxm_CFI69maJw_Ub3sqi7GcsXpvWdq9X5emLQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('Ub3sqi7GcsXpvWdq9X5emLQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - B.cells.vs..TILs.png" /></div></a><div id="Ub3sqi7GcsXpvWdq9X5emLQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - B.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="UWftrTCKFwhxm_CFI69maJw_Ub3sqi7GcsXpvWdq9X5emLQ" class="annotation_pop_up"><h5>B.cells.vs..TILs Measurement vs. Drug</h5><p>Plots B.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UQpomumBtRnDoW6yHB51HLQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Cytotoxic.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UiTAu4DMj1ppKLk8PgTqv5Q_U9Sdoozt2av5oieTNa4uAnQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U9Sdoozt2av5oieTNa4uAnQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Cytotoxic.cells.vs..TILs.png" /></div></a><div id="U9Sdoozt2av5oieTNa4uAnQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Cytotoxic.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="UiTAu4DMj1ppKLk8PgTqv5Q_U9Sdoozt2av5oieTNa4uAnQ" class="annotation_pop_up"><h5>Cytotoxic.cells.vs..TILs Measurement vs. Drug</h5><p>Plots Cytotoxic.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UoRUhM9lBqRvKHzTOe7xnMg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Exhausted.CD8.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UQCWhw7Rpozl3xhGS6RnWWw_UUoT7vubQJuPb1-uyDZ27vg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UUoT7vubQJuPb1-uyDZ27vg');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Exhausted.CD8.vs..TILs.png" /></div></a><div id="UUoT7vubQJuPb1-uyDZ27vg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Exhausted.CD8.vs..TILs.png" style="width: 100%;" /></div></div><div id="UQCWhw7Rpozl3xhGS6RnWWw_UUoT7vubQJuPb1-uyDZ27vg" class="annotation_pop_up"><h5>Exhausted.CD8.vs..TILs Measurement vs. Drug</h5><p>Plots Exhausted.CD8.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="U1yGLlArpK27Af4RI4XK-dQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Macrophages.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UyiJ-olaDQt5E2n2Vn2m7vw_U9J0zmenroDykDY2vXvA2bQ');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U9J0zmenroDykDY2vXvA2bQ');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Macrophages.vs..TILs.png" /></div></a><div id="U9J0zmenroDykDY2vXvA2bQ" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Macrophages.vs..TILs.png" style="width: 100%;" /></div></div><div id="UyiJ-olaDQt5E2n2Vn2m7vw_U9J0zmenroDykDY2vXvA2bQ" class="annotation_pop_up"><h5>Macrophages.vs..TILs Measurement vs. Drug</h5><p>Plots Macrophages.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UhEJTYkmnxEg-WzFWVaRRbg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Mast.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UaPi1hXOZ4CppjaYGtwsYbg_UT4QkgOw7QI08Y5s5VVkr8Q');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UT4QkgOw7QI08Y5s5VVkr8Q');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Mast.cells.vs..TILs.png" /></div></a><div id="UT4QkgOw7QI08Y5s5VVkr8Q" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Mast.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="UaPi1hXOZ4CppjaYGtwsYbg_UT4QkgOw7QI08Y5s5VVkr8Q" class="annotation_pop_up"><h5>Mast.cells.vs..TILs Measurement vs. Drug</h5><p>Plots Mast.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UqVtu8QKoEavNzV4B-i-vzQ" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>Neutrophils.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UA6gXn6uMIW4oXTqSQW4H8Q_UzFcbDFW-G3Eo6M_bP9E2yA');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UzFcbDFW-G3Eo6M_bP9E2yA');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - Neutrophils.vs..TILs.png" /></div></a><div id="UzFcbDFW-G3Eo6M_bP9E2yA" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - Neutrophils.vs..TILs.png" style="width: 100%;" /></div></div><div id="UA6gXn6uMIW4oXTqSQW4H8Q_UzFcbDFW-G3Eo6M_bP9E2yA" class="annotation_pop_up"><h5>Neutrophils.vs..TILs Measurement vs. Drug</h5><p>Plots Neutrophils.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Un7eKuAiAG9puWyBvVgg9VA" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK.CD56dim.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('U0wyV6JgxFkWPz37vjqRt6A_U6yIAsl5EWnRZoChOHSWlvw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('U6yIAsl5EWnRZoChOHSWlvw');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - NK.CD56dim.cells.vs..TILs.png" /></div></a><div id="U6yIAsl5EWnRZoChOHSWlvw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - NK.CD56dim.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="U0wyV6JgxFkWPz37vjqRt6A_U6yIAsl5EWnRZoChOHSWlvw" class="annotation_pop_up"><h5>NK.CD56dim.cells.vs..TILs Measurement vs. Drug</h5><p>Plots NK.CD56dim.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="UATOMFMDrjsnyIViEFMqnrg" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>NK.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UpH9B6E-OjZAPU6L_Inn60g_UxlHtJFA2857xrhZhnfXucg');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UxlHtJFA2857xrhZhnfXucg');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - NK.cells.vs..TILs.png" /></div></a><div id="UxlHtJFA2857xrhZhnfXucg" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - NK.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="UpH9B6E-OjZAPU6L_Inn60g_UxlHtJFA2857xrhZhnfXucg" class="annotation_pop_up"><h5>NK.cells.vs..TILs Measurement vs. Drug</h5><p>Plots NK.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                                
+                                  
+                                    <div id="Up3isyz1s69rSrXpokS6p6g" class="content"><div class="small-10 columns"><ul class="small-block-grid-1">
+                                      
+                                        <li><p><b>T.cells.vs..TILs Measurement vs. Drug<br /><a href="#" onclick="openPopup('UemcdKj2Pp3yzoeS2r7LUVg_UtBrgm3weENajypCz_yijUw');return false;"><span class="label round">More Plot Information</span></a></b></p><a href="#" onclick="openImagePopup('UtBrgm3weENajypCz_yijUw');return false;"><div class="small-12 columns"><image src="./results/cell types/Drug - relative - T.cells.vs..TILs.png" /></div></a><div id="UtBrgm3weENajypCz_yijUw" class="image_pop_up"><div class="image_pop_up_content small-12 columns"><img src="./results/cell types/Drug - relative - T.cells.vs..TILs.png" style="width: 100%;" /></div></div><div id="UemcdKj2Pp3yzoeS2r7LUVg_UtBrgm3weENajypCz_yijUw" class="annotation_pop_up"><h5>T.cells.vs..TILs Measurement vs. Drug</h5><p>Plots T.cells.vs..TILs measurements against Drug.</p></div></li>
+                                      
+                                    </ul></div></div>
+                                  
+                                
+                              
+                            </div>
+                          
+                        </ul></div></div>
+                      
+                    
+                  
+                
+              </div>
+                
+                
+              
+            </ul></div></div></div>
+          
+        
+        
+          
+            <div id="UgJSZ36tfOj9Lv9WE-UAU3Q" class="panelContent" style="display:none"><div class="row"><div class="panel"><p>Summary of the options that were chosen when running this analysis.</p></div></div><div class="row"><div class="panel"><ul class="small-block-grid-25 medium-block-grid-26">
+              
+                <h5><b>Analysis Details</b></h5>
+                <p> Analysis name: Melanoma <br /> Location of results: C:\Users\Nathan\Dropbox\Company\Xsphera\@Analysis\Nanostring\2021.01.22-Nomacam-MetaAnalysis <br /> File type of plots: png <br /><br /></p>
+                <h5><b>Sample Annotation Details</b></h5>
+                <p> Unique sample identifier: File.Name <br />Covariate1: Drug; Variable Type: categorical; Reference Level: Media<br />Covariate2: Dosage; Variable Type: categorical; Reference Level: 0<br />Covariate3: Day; Variable Type: categorical; Reference Level: D0<br /><br /></p>
+                <h5><b>Gene Annotation Details</b></h5>
+                <p> Column defining probe set membership: Official.Gene.Name <br /> Probe annotation column giving cell type-specific probes: Cell.Type <br /><br /></p>
+                <h5><b>Fusion Analysis Details</b></h5>
+                <p> Perform fusion analysis: No <br /> p-value end probe threshold: 0.05 <br /> p-value junction probe threshold: 0.05 <br /><br /></p>
+                <h5><b>SNV Analysis Details</b></h5>
+                <p> Perform snv analysis: No <br /> Fold change threshold(s): 1, 2 <br /> p-value threshold(s): 0.01, 0.01 <br /> Reference samples:<br /> NA <br /> Use EM post processing: Yes <br /> Use debiasing post processing: Yes <br /><br /></p>
+                <h5><b>Normalization Details</b></h5>
+                <p> Perform normalization on: none <br /> Number of normalization probes: NA <br /><br /></p>
+                <h5><b>Pathway Scoring Analysis Details</b></h5>
+                <p> Perform pathway scoring analysis: TRUE <br /> Covariates to include in plots: Drug <br /><br /></p>
+                <h5><b>Differential Expression Analysis Details</b></h5>
+                <p> Perform differential expression testing: TRUE <br /> Predictors: Drug <br /> Confounders: none <br /> P-value adjustment: BY <br /> Run gene set analysis TRUE <br /><br /></p>
+                <h5><b>Pathview  Details</b></h5>
+                <p> Display results using Pathview: TRUE <br /> Color Pathview pathview plots by: Fold-change <br /> P-value threshold: 0.05 <br /> Additional KEGG IDs: none <br /><br /></p>
+                <h5><b>Cell Type Profiling Details</b></h5>
+                <p> Perform cell type profiling: TRUE <br /> Covariates to include in plots: Drug <br /> Use all cell type genes or dynamically select a subset:  <br /> P-value threshold for reporting a cell type's results: 1 <br /> Show results at the level of raw cell type abundance: TRUE <br /> Show results at the level of relative cell type abundance: TRUE <br /> Use default contrasts for calculating relative cell type abundance: TRUE <br /><br /></p>
+                <h5><b>Probe Descriptive Analysis Details</b></h5>
+                <p> Run Probe Descriptive analysis: FALSE <br /><br /></p>
+                <h5><b>Related Analytes Analysis Details</b></h5>
+                <p> Related Analytes Analysis: FALSE <br /><br /></p>
+                <h5><b>Warnings</b></h5>
+                <p>  Geneset information is discarded: the following error occurred<br /> Error in get.set.matrix(validated.prb.annot = validated.prb.annot, set.column.id = prb.set.column, : At least 1 set needs to have size equal or larger than5<br />    Differential Expression was not completed due to low group size (less than three) for:  Drug <br /> No valid predictor was selected for DE. DE was aborted <br /> Warning: Geneset analysis will be not be conducted because no geneset annotation is provided<br /> <br />  <br /> <br />DC, Treg, CD8 T cells, Th1 cells cell types dropped from Cell Type Profiling as all probes were discarded due to signals below background threshold expression.<br /><br />Warning: the following cell types in the cell types contrast file were not found in the probe annotation file's cell type column:<br /> DC, Th1 cells, Treg, CD8 T cells <br /> Therefore the following contrasts have been discarded:<br /> DC.vs..TILs<br />Th1.cells.vs..TILs<br />Treg.vs..TILs<br />CD8.T.cells.vs..TILs<br />CD8.vs..Exhasuted.CD8<br />CD8.vs..Treg<br />CD8.vs..T.cells <br /> Warning:  Pathway scoring can not be completed as there are no valid probesets defined <br /> <br /><br /></p>
+              
+            </ul></div></div></div>
+          
+        
+      
+    </div>
+    <div class="modal">
+      <!--Loading div-->
+    </div>
+    <script>
+          $(document).foundation();
+        </script>
+    <script>
+          $(document).ready(function() {
+
+          // Initialize all of the data tables
+          $('table.display').dataTable( {
+          "order": [],
+          "aLengthMenu": [[5,10,15,20,25],[5,10,15,20,25]],
+          "pageLength": 25
+          } );
+
+          // Hide share button if the inc file isn't there
+          if (!shareButton) {
+          $(".share-report").hide();
+          }
+
+          $(".image_pop_up").on("click", function() {
+          $(".ui-dialog-content").dialog("close");
+          });
+
+          // Adjust the text on each active drop-down
+          $(".f-dropdown li.active a").each(function( index ) {
+          var newActive = $('[data-dropdown="' + $(this).closest('ul').attr('id') + '"]');
+
+          if (newActive.attr('title') != $(this).text()) {
+          newActive.text(newActive.attr('title') + ': ' + $(this).text().replace(newActive.attr('title'), ""));
+          }
+          else{
+          newActive.text($(this).text());
+          }
+
+          });
+
+          // Make top-bar behave like a tab controls - activate on click
+          $('section.top-bar-section ul.right li').click(function() {
+          if (!$(this).hasClass("share-report")) {
+          $('section.top-bar-section ul.right li').removeClass('active');
+          $(this).addClass("active");
+          }
+          });
+
+          // Hide's the drop-down after it's clicked and add active to its 'parent' button
+          $(".f-dropdown").on("click", function(){
+          $(this).closest('ul').removeClass('open').css('left', '-9999px');
+          });
+
+          // When a drop-down's child is clicked, set its parent buttons text
+          $(".f-dropdown li a").on("click", function(){
+
+          // Sync the other drop-downs that have the same name...
+          var matchingNodes = $('.f-dropdown li a[menuindex="' + $(this).attr('menuindex') + '"]');
+
+          jQuery.each(matchingNodes, function(i, val) {
+          var hrefText = val.href.substring(val.href.indexOf('#'));
+          $(hrefText).siblings().removeClass('active')
+          $(hrefText).addClass('active');
+
+          var previousActive = $('*[data-dropdown="' + $(this).closest('ul').attr('id') + '"]').closest('dl').find('li a.active');
+          previousActive.removeClass('active');
+          previousActive.text(previousActive.attr('title'));
+
+          var newActive = $('[data-dropdown="' + $(this).closest('ul').attr('id') + '"]');
+
+          if (newActive.attr('title') != $(this).text()) {
+          newActive.text(newActive.attr('title') + ': ' + $(this).text().replace(newActive.attr('title'), ""));
+          }
+          else{
+          newActive.text($(this).text());
+          }
+
+          newActive.addClass('active');
+
+          });
+          });
+
+          // Sync all sub-navs with the same name and activate the matching content
+          $('dl.sub-nav li a').on('click', function(){
+
+          var menuName = $(this).attr('menuindex').split("|")[0];
+
+          $("dl.sub-nav li a[menuindex^='" + menuName + "|']").parent().removeClass('active');
+          $("dl.sub-nav li a[menuindex^='" + menuName + "|']").parent().parent().siblings('div.tabs-content').children('div.content.active').removeClass('active');
+
+          var matchingNodes = $('dl.sub-nav li a:contains(' + $(this).text() + ')');
+          matchingNodes.parent().addClass('active');
+
+          jQuery.each(matchingNodes, function(i, val) {
+          var hrefText = $(this).attr('href');
+          $(hrefText).addClass('active');
+          });
+
+          });
+
+          });
+        </script>
+  </body>
+</html>

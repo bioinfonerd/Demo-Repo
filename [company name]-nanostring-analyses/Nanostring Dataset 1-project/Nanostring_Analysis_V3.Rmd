@@ -1,0 +1,271 @@
+---
+title: "Nanostring Analysis for Dataset X v3.0"
+author: "Nathan T. Johnson"
+date: "3/12/2020"
+output:
+  pdf_document: default
+purpose: Update meta data for Nanostring to reflect what was sent, Is Nanostring comparative with Flow Cytometry?, Add CD8a to the heatmap for T-cell data for comparison,Normalize the heatmap plots so easier to compare to each gene, PD1 modulation database (Literature Search), Can a composite score for Cell Stress be measured by Nanostring data?
+---
+
+
+```{r results='asis', echo=FALSE, include=FALSE,}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+#load in libraries
+Packages <- c('tidyverse','ggplot2','openxlsx','RColorBrewer','Hmisc','icd','hrbrthemes','viridis','knitr','PCAtools','biomaRt')
+lapply(Packages, library, character.only = TRUE)
+```
+
+```{r function definitions, echo = FALSE}
+
+#read in all sheets from excel
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+```
+
+
+```{r data cleaning and setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+#set working directory
+setwd('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/')
+
+
+#Pull in Nanostring metadata and expression data
+Expression_Data <- read.csv('Expression Data.csv')
+Metadata <- read.csv('Metadata.csv')
+Genes <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List.csv')
+Annotations <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List_Annotations.csv')
+
+#Pull in Flow Data
+#The first shows immune cells as a proportion of total CD45+
+
+CD45_flow <- read.csv('../Flow Data/percent CD45 - Nathan Modified.csv')
+
+#The other one has sheets with data from S1 or S3, as a proportion of all cells collected or as a proportion of live cells (as indicated). Let me know if you have any questions.
+all_cells_flow <- read_all_sheets('../Flow Data/immune profiling - P0003-31.xlsx')
+
+```
+
+
+
+# Guiding Questions 
+
+Which immune cell type (and other) to compare with what we learned from flow cytometry?
+
+Did PD1 elicit any changes in expression profile compared with IgG?  
+
+What can we learn about IFNg treatment.immune cells activated?  
+
+# What are the characteristics of the samples?
+
+### Basic Setup
+
+```{r,echo=FALSE}
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date"))
+```
+
+
+
+# What is being quantified?
+
+### What Gene functions are being quantified?
+
+```{r,echo=FALSE}
+Annotations %>% colnames() %>% knitr::kable()
+
+```
+
+
+
+### How many genes represent each function type Information?
+
+```{r,echo=FALSE}
+Annotations %>% group_by(Cell.Type) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Cellular.Stress) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Complement.System) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Death.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Extracellular.matrix.organization) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Fc.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Innate.Immunity) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interferon.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interleukin.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(NF.kB) %>% count() %>% knitr::kable()
+Annotations %>% group_by(MAPK.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Metabolism) %>% count() %>% knitr::kable()
+Annotations %>% group_by(TLR.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(VEGF.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Wnt.Signaling) %>% count() %>% knitr::kable()
+```
+
+### What comparisons can be made?
+
+```{r,echo=FALSE}
+
+Metadata %>% dplyr::select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Fraction) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(RNA.Solution) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Tumor) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Treatment) %>% count() %>% knitr::kable()
+
+
+```
+
+
+
+
+
+# Can we group the samples?
+
+PCA plots give an idea what similiarties are to be expected from the samples that are in it.  
+
+PCA 
+- Calculates varability across entire dataset for each gene
+- Groups components 
+- Using these components it allows to check for bias and grouping within samples
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+
+
+#expression data formatting
+#remove gene controls from expression data
+PCA_Data <- Expression_Data %>% filter(!grepl("NEG",Gene_Name) & !grepl("POS",Gene_Name))
+row.names(PCA_Data) <- PCA_Data$Gene_Name
+#drop unrelevant columns
+PCA_Data <- PCA_Data %>% dplyr::select(-c("Accession","Sample.ID","Gene_Name"))
+PCA_Data <- as.matrix((PCA_Data))
+
+#metadata formatting
+PCA_Metadata <- Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date"))
+row.names(PCA_Metadata) <- Metadata$Sample.Name
+
+
+#Conduct PCA
+p <- pca(PCA_Data, metadata = PCA_Metadata, removeVar = 0.1)
+
+#Plot scree plot
+output <- screeplot(p,returnPlot = TRUE)
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/PCAPlot.png')
+
+#Plot PC1 vs PC2
+  biplot(p,    
+         colby = 'Tumor',
+         hline = 0, vline = 0,
+         legendPosition = 'right', legendLabSize = 16, legendIconSize = 8.0,
+         shape = 'Treatment',
+         drawConnectors = FALSE,
+         title = 'PC1 vs PC2',
+         subtitle = 'PC1 versus PC2')
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Pc1vsPC2.png')
+  
+  
+#Plot each component
+pairsplot(p,
+triangle = FALSE,
+hline = 0, vline = 0,
+pointSize = 0.8,
+gridlines.major = FALSE, gridlines.minor = FALSE,
+colby = 'Tumor',
+title = 'Pairs plot', plotaxes = TRUE,
+margingaps = unit(c(0.1, 0.1, 0.1, 0.1), 'cm'))
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Principle Component Comparison.png')
+
+#All Plots
+eigencorplot(p,
+  metavars = colnames(PCA_Metadata),
+  col = c('darkblue', 'blue2', 'black', 'red2', 'darkred'),
+  cexCorval = 0.7,
+  colCorval = 'white',
+  fontCorval = 2,
+  posLab = 'bottomleft',
+  rotLabX = 45,
+  posColKey = 'top',
+  cexLabColKey = 1.5,
+  scale = TRUE,
+  main = 'Principle Components Correlation',
+  colFrame = 'white',
+  plotRsquared = FALSE)
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Principle Component MetaData Correlation.png')
+
+#Which Principle Component is significantly Correlated 
+eigencorplot(p,
+  metavars = colnames(PCA_Metadata),
+  col = c('white', 'cornsilk1', 'gold', 'forestgreen', 'darkgreen'),
+  cexCorval = 0.7,
+  colCorval = 'white',
+  fontCorval = 2,
+  posLab = 'bottomleft',
+  rotLabX = 45,
+  posColKey = 'top',
+  cexLabColKey = 1.5,
+  scale = TRUE,
+  main = bquote(Principal ~ component ~ Pearson ~ r^2 ~ clinical ~ correlates),
+  colFrame = 'white',
+  plotRsquared = TRUE,
+  corFUN = 'pearson',
+  corUSE = 'pairwise.complete.obs',
+  signifSymbols = c('****', '***', '**', '*', ''),
+  signifCutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, 1))
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Signficiant Principle Component MetaData Correlation.png')
+
+
+#What genes are driving the principle component
+plotloadings(p,
+  rangeRetain = 0.01,
+  labSize = 3.0,
+  title = 'What genes are driving the principle component',
+  subtitle = 'PC1, PC2, PC3, PC4, PC5',
+  caption = 'Top 1% variables',
+  shape = 24,
+  col = c('limegreen', 'black', 'red3'),
+  drawConnectors = TRUE)
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Genes Driving Principle Compoments (1-5).png')
+
+#What genes are driving the principle component
+plotloadings(p,
+  rangeRetain = 0.01,
+  components = getComponents(p, c(1,3,4,9)),
+  labSize = 3.0,
+  title = 'What genes are driving the principle component',
+  subtitle = 'Focus on Significant Components',
+  shape = 24,
+  col = c('limegreen', 'black', 'red3'),
+  drawConnectors = TRUE)
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Genes Driving Significant Principle Compoments.png')
+
+
+#PC1 and PC3 seem to be the main areas of interest
+#Plot PC1 vs PC2
+  biplot(p,    
+         x = 'PC1',
+         y = 'PC3',
+         colby = 'Tumor',
+         hline = 0, vline = 0,
+         legendPosition = 'right', legendLabSize = 16, legendIconSize = 8.0,
+         shape = 'Treatment',
+         drawConnectors = FALSE,
+         title = 'Component Comparison',
+         subtitle = 'PC1 versus PC3')
+ggplot2::ggsave('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/Analysis/Pc1vsPC3.png')
+
+
+#ID gene functions [TODO]
+# mart <- useMart('ENSEMBL_MART_ENSEMBL')
+# mart <- useDataset('hsapiens_gene_ensembl', mart)
+# 
+#   getBM(mart = mart,
+#     attributes = c('affy_hg_u133a', 'ensembl_gene_id',
+#       'gene_biotype', 'external_gene_name'),
+#     filter = 'affy_hg_u133a',
+#     values = c('215281_x_at', '214464_at', '211122_s_at', '205225_at',
+#       '202037_s_at', '204540_at', '215176_x_at', '205044_at', '208650_s_at',
+#       '205380_at'),
+#     uniqueRows = TRUE)
+
+```
+

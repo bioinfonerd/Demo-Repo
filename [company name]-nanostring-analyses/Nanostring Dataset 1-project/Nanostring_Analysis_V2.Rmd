@@ -1,0 +1,511 @@
+---
+title: "Nanostring Analysis for Dataset X v2.0"
+author: "Nathan T. Johnson"
+date: "3/12/2020"
+output:
+  pdf_document: default
+purpose: Goal to identify an RNA pattern
+---
+
+
+```{r load in libraries,warning=FALSE,message=FALSE,echo=FALSE}
+
+#load in libraries
+library('tidyverse')
+library('ggplot2')
+library("openxlsx")
+library("RColorBrewer")
+library("Hmisc")
+library("icd")
+library("hrbrthemes")
+library("viridis")
+library("knitr")
+
+```
+
+```{r function definitions, echo = FALSE}
+
+#read in all sheets from excel
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+```
+
+```{r data cleaning and setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+#set working directory
+setwd('C:/Users/Nathan/Dropbox/Company/Xsphera/Nanostring')
+
+#Pull in metadata and expression data
+Expression_Data <- read.csv('Expression Data.csv')
+Metadata <- read.csv('Metadata.csv')
+Genes <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List.csv')
+Annotations <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List_Annotations.csv')
+
+
+
+#grab all data locations
+#WARNING# adding additional files will change what data is being pulled
+#WARNING# opening one of the excel files while running program will throw off the location 
+#path <- './Data/'
+#location <- list.files(path)
+
+#load in data
+#luminex_data is stored as two data frames contained within a list
+#accessing raw or diluted is done by:
+#luminex_data$`raw data`
+#luminex_data$`dilution x2`
+#diluation worksheet contains the ids that can be mapped to the other dataset
+#luminex_data <- read_all_sheets(paste(path,location[1],sep=''))
+
+#clinical_data <- read.xlsx(paste(path,location[2],sep=''))
+
+#feature_data <- read.xlsx(paste(path,location[3],sep=''))
+
+#fix excel date conversion
+#for(i in 4:length(clinical_data)){
+# clinical_data[,i] <- convertToDate(clinical_data[,i])
+#}
+
+#for(i in 8:9){
+#  feature_data[,i] <- convertToDate(feature_data[,i])
+#}
+
+# Identify what cytokine values core is confident in
+#not confident
+#red_cytokines <- c("IL-6","IL-8","MCP-3","IL-10","IL-1b","IFN-g","IL-1a","IL-17a","IL-2","IL-5","IL-12p70","IL-13")
+#maybe confident
+#orange_cytokines <- c("MICA","MIP1-a","TNFa","TGFb3")
+#definitely detected
+#green_cytokines <-c("MICB","GCP-2","EGF","ANG2","MIP-2","IL-1ra","MIP-1b","FRACTALKINE","IL-2Ra","G-CSF","IL-23","FGFb","TGFb2","TGFb1")
+
+```
+
+
+# Guiding Questions 
+
+Which immune cell type (and other) to compare with what we learned from flow cytometry?
+
+Did PD1 elicit any changes in expression profile compared with IgG?  
+
+What can we learn about IFNg treatment.immune cells activated?  
+
+# What are the characteristics of the samples?
+
+### Basic Setup
+
+```{r,echo=FALSE}
+Metadata %>% select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment")
+```
+
+
+
+# What is being quantified?
+
+### Number of Nanostring Controls
+
+```{r, echo=FALSE}
+#Expression_Data %>% group_by(Class.Name) %>% count() %>% knitr::kable()
+```
+
+### What Gene functions are being quantified?
+
+```{r,echo=FALSE}
+Annotations %>% colnames() %>% knitr::kable()
+
+```
+
+
+### How many genes represent each function type Information?
+
+```{r,echo=FALSE}
+Annotations %>% group_by(Cell.Type) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Cellular.Stress) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Complement.System) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Death.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Extracellular.matrix.organization) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Fc.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Innate.Immunity) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interferon.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interleukin.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(NF.kB) %>% count() %>% knitr::kable()
+Annotations %>% group_by(MAPK.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Metabolism) %>% count() %>% knitr::kable()
+Annotations %>% group_by(TLR.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(VEGF.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Wnt.Signaling) %>% count() %>% knitr::kable()
+```
+
+### What comparisons can be made?
+
+```{r,echo=FALSE}
+
+Metadata %>% select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Fraction) %>% count() %>% knitr::kable()
+Metadata %>% select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(RNA.Solution) %>% count() %>% knitr::kable()
+Metadata %>% select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Tumor) %>% count() %>% knitr::kable()
+Metadata %>% select('Sample.Name','RNA.Solution',"Tumor","Fraction","Treatment") %>% group_by(Treatment) %>% count() %>% knitr::kable()
+
+
+```
+
+
+
+
+# Can we group the samples?
+
+PCA plots give an idea what similiarties are to be expected from the samples that are in it.  
+
+PCA 
+- Calculates varability across entire dataset for each gene
+- Groups components 
+- Using these components it allows to check for bias and grouping within samples
+
+```{r,echo=FALSE,warning=FALSE}
+
+#drop unrelevant columns
+PCA_Data <- Expression_Data %>% select (-c("Accession"))
+
+#rotate data so genes are variables
+PCA_Data <- as_tibble(cbind(nms = names(PCA_Data), t(PCA_Data)))
+colnames(PCA_Data) <-PCA_Data[2,]
+PCA_Data <- PCA_Data[-1, ]
+PCA_Data <- PCA_Data[-1, ]
+sample_names <- PCA_Data$Gene_Name
+PCA_Data <- sapply(PCA_Data[,2:length(PCA_Data)],as.numeric) #make numeric
+PCA_Data <- as_tibble(PCA_Data)
+
+#summarize pca
+PCA_Data.pr <- prcomp(PCA_Data, center = TRUE, scale = TRUE)
+summary(PCA_Data.pr)
+
+#make tibble for plotting with meta data
+output <- tibble(Sample.Name=sample_names,x=PCA_Data.pr$x[,1],y=PCA_Data.pr$x[,2],)
+output <- output %>% left_join(Metadata)
+```
+
+
+### Samples Separate by treatment
+
+```{r,echo=FALSE}
+
+#plot
+test <- ggplot(output,aes(x=x,y=y,color=Tumor,shape=Treatment))+
+  geom_point(aes(size=Fraction)) +
+  ggtitle("PCA Plot labeling Tumor, Treatment, and Fraction") +
+  xlab("PC1 (37.6%)") + ylab("PC2 (17.5%)")
+
+ggplot2::ggsave('PCAPlot.png')
+
+```
+
+
+```{r,echo=FALSE}
+ggplot(output,aes(x=x,y=y,color=Tumor,shape=Treatment))+
+  geom_point(aes(size=RNA.Solution)) +
+  ggtitle("PCA Plot labeling Tumor, Treatment, and RNA.Solution") +
+  xlab("PC1 (37.6%)") + ylab("PC2 (17.5%)")
+
+```
+
+#Compare PC Components
+
+```{r,echo=FALSE}
+
+
+#PC1 = treatment effect
+
+#PC2 = variation effect
+
+
+x=PCA_Data.pr$x[,1]
+
+y=PCA_Data.pr$x[,2]
+
+
+PCA_Data.pr$rotation
+
+nComp = 2
+Xhat = PCA_Data.pr$x[,1:nComp] %*% t(PCA_Data.pr$rotation[,1:nComp])
+Xhat = scale(Xhat, center = -mu, scale = FALSE)
+
+Xhat[1,]
+
+
+X = PCR_Data[,1:4]
+mu = colMeans(X)
+
+Xpca = prcomp(X)
+
+nComp = 2
+Xhat = Xpca$x[,1:nComp] %*% t(Xpca$rotation[,1:nComp])
+Xhat = scale(Xhat, center = -mu, scale = FALSE)
+
+test <- Xhat[1,]
+
+
+mu<-colMeans(PCA_Data)
+
+PCA_Data.pr$loadings
+
+library(factoextra)
+fviz_pca_var(PCA_Data.pr,
+             col.var = "contrib", # Color by contributions to the PC
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE     # Avoid text overlapping
+             )
+
+library(factoextra)
+# Eigenvalues
+eig.val <- get_eigenvalue(PCA_Data.pr)
+eig.val
+  
+# Results for Variables
+res.var <- get_pca_var(PCA_Data.pr)
+res.var$coord          # Coordinates
+res.var$contrib        # Contributions to the PCs
+res.var$cos2           # Quality of representation 
+
+max(res.var$contrib$Dim.1)
+
+
+
+
+
+tmp %>% order('Dim.1') %>% head()
+
+
+
+
+tmp<-res.var$contrib
+
+tmp[,1]
+
+head(res.var$cos2)
+
+# Results for individuals
+res.ind <- get_pca_ind(PCA_Data.pr)
+res.ind$coord          # Coordinates
+res.ind$contrib        # Contributions to the PCs
+res.ind$cos2           # Quality of representation 
+
+
+
+fold <- fold[(fold>=5) | (fold<=-5)]
+
+
+
+tmp <- tibble(res.var$contrib)
+tmp <- res.var$contrib
+tmp <- data.frame(tmp)
+tmp <- tmp[order(tmp$Dim.1,decreasing=TRUE),]
+PCA1 <- tmp[(tmp$Dim.1>=.33),]
+
+row.names(PCA1)
+
+tmp <- tmp[order(tmp$Dim.1,decreasing=TRUE),]
+PCA1 <- tmp[(tmp$Dim.1>=.33),]
+
+
+tmp <- tmp[order(tmp$Dim.2,decreasing=TRUE),]
+PCA2 <- tmp[(tmp$Dim.2>=.33),]
+row.names(PCA2)
+
+
+
+
+```
+
+
+# Immune Cell Type Composition?
+What can we learn about IFNg treatment.immune cells activated?
+Which immune cell type (and other) to compare with what we learned from flow cytometry?
+PD1 elicit response?
+
+*Missing Flow Cytometry data
+
+```{r,echo=FALSE}
+#rotate expression data so genes are columns and clean it up
+data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(data) <-data[2,]
+data <- data[-1, ]
+data <- data[-1, ]
+data <- data[-1, ]
+
+#Cell Types Available
+Cell.Types <- unique(Annotations$Cell.Type)
+  
+#Select genes available for Cell Type
+selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[2])
+
+#filter genes by cell type
+output <- data %>% select(selected_genes$Gene)
+output$Sample.Name <- data$Gene_Name
+output <- output %>% left_join(Metadata)
+output <- output %>% select(-c("Sample.Name","File.Name","Cartridge.ID","Lane.Number","Import.Date")) #remove unncessary colnames
+
+
+#reorganize for plotting
+output <- output %>% gather(key = "Gene", value = "Expression", -RNA.Solution,-Tumor,-Fraction,-Treatment)
+mode(output$Expression) <- "numeric"
+
+
+#plot by normal and treatments
+ggplot(output,aes(x=Gene,y = Expression, fill = Tumor)) +
+   geom_violin() +
+   ggtitle("Is there a relationship for Tumor?")
+
+ggplot(output,aes(x=Gene,y = Expression, fill = RNA.Solution)) +
+   geom_violin() +
+   ggtitle("Is there a relationship for RNA Solution?")
+
+ggplot(output,aes(x=Gene,y = Expression, fill = Fraction)) +
+   geom_violin() +
+   ggtitle("Is there a relationship for Tumor?")
+
+ggplot(output,aes(x=Gene,y = Expression, fill = Treatment)) +
+   geom_violin() +
+   ggtitle("Is there a relationship for RNA Solution?")
+```
+
+### Heatmaps of Each Immune Cell Type
+
+```{r,echo=FALSE}
+#rotate expression data so genes are columns and clean it up
+data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(data) <-data[2,]
+data <- data[-1, ]
+data <- data[-1, ]
+data <- data[-1, ]
+
+#meta information orientated to data
+samples <- data.frame(data$Gene_Name)
+colnames(samples) <- "Sample.Name"
+samples <- samples %>% left_join(Metadata)
+rownames(samples) <- samples$Sample.Name
+samples <- samples %>% select(-c("Sample.Name","File.Name","Cartridge.ID","Lane.Number","Import.Date")) #remove unncessary colnames
+
+#function for saving
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+
+#Cell Types Available
+Cell.Types <- unique(Annotations$Cell.Type)
+
+for(i in 2:length(Cell.Types)){
+  #Select genes available for Cell Type
+  selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[i])
+  
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    output <- data %>% select(selected_genes$Gene)
+    output <- sapply(output, as.numeric)
+    rownames(output) <- data$Gene_Name
+    
+    #plot
+    my_heatmap <- pheatmap::pheatmap(output,main=Cell.Types[i],annotation_row = samples)
+    #save heatmap
+    save_pheatmap_png(my_heatmap, paste(as.character(Cell.Types[i]),".png",sep="")) 
+  }
+}
+
+```
+
+
+### Heatmaps for each Nanostring Function Annotation
+
+```{r,echo=FALSE}
+#Functions Available
+Functions <- unique(colnames(Annotations))
+
+for(i in 2:length(Functions)){
+  #Select genes available for Function
+  selected_genes <- Annotations %>% filter((!!rlang::sym(Functions[i])) == '+')
+
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    output <- data %>% select(selected_genes$Gene)
+        #can't figure out why, but this selection doesn't select everything correctly
+    if(i==16){
+      output <- subset(output, select=-c(Gene_Name,POS_B,NEG_B,NEG_C,NEG_D,NEG_F))
+    }
+    output <- sapply(output, as.numeric)
+    rownames(output) <- data$Gene_Name
+    
+    #plot
+    my_heatmap <- pheatmap::pheatmap(output,main=Functions[i],annotation_row = samples)
+    #save heatmap
+    save_pheatmap_png(my_heatmap, paste(as.character(Functions[i]),".png",sep="")) 
+  }
+}
+
+```
+
+### Focus on Interferon gamme and IgG
+
+```{r,echo=FALSE}
+#Functions Available
+Functions <- unique(colnames(Annotations))
+
+#select Interfereon
+i<-12
+
+#Select genes available for Function
+selected_genes <- Annotations %>% filter((!!rlang::sym(Functions[i])) == '+')
+output <- data %>% select(selected_genes$Gene)
+#can't figure out why, but this selection doesn't select everything correctly
+output <- subset(output, select=-c(POS_C,NEG_G))
+output <- sapply(output, as.numeric)
+rownames(output) <- data$Gene_Name
+
+#fold change of IFN gamma vs IgG
+fold <- gtools::foldchange(output[6,],output[7,])
+
+#filter for high fold change
+fold <- fold[(fold>=3) | (fold<=-3)]
+
+
+#plot
+#make into dataframe
+fold <- data.frame(fold)
+fold <- data.frame(t(fold))
+```
+
+
+```{r,echo=FALSE}
+tmp <- data %>% filter(Gene_Name == 'P0010.IFNy')
+tmp <- sapply(tmp, as.numeric)
+tmp2 <- data %>% filter(Gene_Name == 'P0010.IgG')
+tmp2 <- sapply(tmp2, as.numeric)
+fold <- gtools::foldchange(tmp,tmp2)
+
+#filter for high fold change
+fold <- fold[(fold>=5) | (fold<=-5)]
+
+#for displaying purposes
+fold <- data.frame(t(fold))
+fold <- data.frame(t(fold))
+
+
+
+
+
+
+```
+
+
+```
+
+
+

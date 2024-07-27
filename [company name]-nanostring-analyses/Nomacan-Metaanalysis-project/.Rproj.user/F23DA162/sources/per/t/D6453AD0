@@ -1,0 +1,24 @@
+{
+    "id": "D6453AD0",
+    "path": "/c/Users/Nathan/Dropbox/Company/Xsphera/@Analysis/Nomacan-Metaanalysis/R/Nanostring_Pipeline.R",
+    "project_path": "R/Nanostring_Pipeline.R",
+    "type": "r_source",
+    "hash": "2615242962",
+    "contents": "",
+    "dirty": false,
+    "created": 1614961265831.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "cursorPosition": "152,2",
+        "scrollLine": "0"
+    },
+    "folds": "5|29|35|0|\n37|12|72|0|\n74|29|93|0|\n95|51|131|0|\n",
+    "lastKnownWriteTime": 1615594628,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1615594627869,
+    "read_only": false,
+    "read_only_alternatives": []
+}

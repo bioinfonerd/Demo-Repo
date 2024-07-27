@@ -1,0 +1,165 @@
+---
+title: "Nanostring Analysis for Dataset X v3.0"
+author: "Nathan T. Johnson"
+date: "3/12/2020"
+output:
+  pdf_document: default
+purpose: Generate All Cell Type Images
+---
+
+```{r results='asis', echo=FALSE, include=FALSE,}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+#load in libraries
+Packages <- c('tidyverse','ggplot2','openxlsx','RColorBrewer','Hmisc','icd','hrbrthemes','viridis','knitr','PCAtools','biomaRt')
+lapply(Packages, library, character.only = TRUE)
+```
+
+```{r function definitions, echo = FALSE}
+
+#read in all sheets from excel
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+```
+
+
+```{r data cleaning and setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+#set working directory
+setwd('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/')
+
+
+#Pull in Nanostring metadata and expression data
+Expression_Data <- read.csv('Expression Data.csv')
+Metadata <- read.csv('Metadata.csv')
+Genes <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List.csv')
+Annotations <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List_Annotations.csv')
+
+#Pull in Flow Data
+#The first shows immune cells as a proportion of total CD45+
+
+CD45_flow <- read.csv('../Flow Data/percent CD45 - Nathan Modified.csv')
+
+#The other one has sheets with data from S1 or S3, as a proportion of all cells collected or as a proportion of live cells (as indicated). Let me know if you have any questions.
+all_cells_flow <- read_all_sheets('../Flow Data/immune profiling - P0003-31.xlsx')
+
+```
+
+# Immune Cell Type Composition?
+
+What are the expression heatmaps across genes that are suppose to indicate cell type calls
+
+### Heatmaps of Each Immune Cell Type
+
+```{r,echo=FALSE}
+#rotate expression data so genes are columns and clean it up
+data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(data) <-data[2,]
+data <- data[-1, ]
+data <- data[-1, ]
+data <- data[-1, ]
+
+
+
+#meta information orientated to data
+samples <- data.frame(data$Gene_Name)
+colnames(samples) <- "Sample.Name"
+samples <- samples %>% left_join(Metadata)
+rownames(samples) <- samples$Sample.Name
+samples <- samples %>% dplyr::select(-c("Sample.Name","File.Name","Cartridge.ID","Lane.Number","Import.Date")) #remove unncessary colnames
+
+#function for saving
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+
+#Cell Types Available
+Cell.Types <- unique(Annotations$Cell.Type)
+
+for(i in 2:length(Cell.Types)){
+  #Select genes available for Cell Type
+  selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[i])
+  
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    #not all genes are within dataset, exclude those
+    output <- data %>% dplyr::select(any_of(selected_genes$Gene)) 
+    if(length(colnames(output))>1){
+          output <- sapply(output, as.numeric)
+          rownames(output) <- data$Gene_Name
+          
+          #plot
+          my_heatmap <- pheatmap::pheatmap(output,main=Cell.Types[i],annotation_row = samples,scale="column")
+          #save heatmap
+          save_pheatmap_png(my_heatmap, paste(as.character(Cell.Types[i]),"gene_scaling.png",sep="")) 
+    }
+  }
+}
+
+```
+
+### Excluding Samples with Treatment 
+
+```{r,echo=FALSE}
+
+#rotate expression data so genes are columns and clean it up
+data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(data) <-data[2,]
+data <- data[-1, ]
+data <- data[-1, ]
+data <- data[-1, ]
+
+#exclude samples without treatment
+data <- data %>% filter(Gene_Name %in% ((Metadata %>% filter(Treatment == 'None'))$Sample.Name %>% as.character()))
+
+#meta information orientated to data
+samples <- data.frame(data$Gene_Name)
+colnames(samples) <- "Sample.Name"
+samples <- samples %>% left_join(Metadata)
+rownames(samples) <- samples$Sample.Name
+samples <- samples %>% dplyr::select(-c("Sample.Name","File.Name","Cartridge.ID","Lane.Number","Import.Date")) #remove unncessary colnames
+
+#function for saving
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+
+#Cell Types Available
+Cell.Types <- unique(Annotations$Cell.Type)
+
+for(i in 2:length(Cell.Types)){
+  #Select genes available for Cell Type
+  selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[i])
+  
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    #not all genes are within dataset, exclude those
+    output <- data %>% dplyr::select(any_of(selected_genes$Gene)) 
+    if(length(colnames(output))>1){
+          output <- sapply(output, as.numeric)
+          rownames(output) <- data$Gene_Name
+          
+          #plot
+          my_heatmap <- pheatmap::pheatmap(output,main=Cell.Types[i],annotation_row = samples,scale="column")
+          #save heatmap
+          save_pheatmap_png(my_heatmap, paste(as.character(Cell.Types[i]),"gene_scaling.png",sep="")) 
+    }
+  }
+}
+
+```

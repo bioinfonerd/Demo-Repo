@@ -1,0 +1,110 @@
+---
+title: "v4"
+author: "Nathan T. Johnson"
+date: "4/8/2020"
+output: html_document
+---
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Flow Cytometry Data
+Needs modification in order to adapt RNA amounts
+
+```{r,echo=FALSE,message=FALSE}
+
+
+
+#pheatmap::pheatmap(output,main=CD45_flow,annotation_row = samples)
+
+
+
+
+
+```
+
+
+# Immune Cell Type Composition?
+What can we learn about IFNg treatment.immune cells activated?
+Which immune cell type (and other) to compare with what we learned from flow cytometry?
+PD1 elicit response?
+
+### Heatmaps of Each Immune Cell Type
+
+
+### Scaling for each gene (mean and 3 Standard Deviations)
+
+```{r,message=FALSE,echo=FALSE}
+#rotate expression data so genes are columns and clean it up
+data <- as_tibble(cbind(nms = names(Expression_Data), t(Expression_Data)))
+colnames(data) <-data[2,]
+data <- data[-1, ]
+data <- data[-1, ]
+data <- data[-1, ]
+
+
+
+#meta information orientated to data
+samples <- data.frame(data$Gene_Name)
+colnames(samples) <- "Sample.Name"
+samples <- samples %>% left_join(Metadata)
+rownames(samples) <- samples$Sample.Name
+samples <- samples %>% dplyr::select(-c("Sample.Name","File.Name","Cartridge.ID","Lane.Number","Import.Date")) #remove unncessary colnames
+
+#function for saving
+save_pheatmap_png <- function(x, filename, width=1200, height=1000, res = 150) {
+  png(filename, width = width, height = height, res = res)
+  grid::grid.newpage()
+  grid::grid.draw(x$gtable)
+  dev.off()
+}
+
+
+#Cell Types Available
+Cell.Types <- unique(Annotations$Cell.Type)
+
+for(i in 2:length(Cell.Types)){
+  #Select genes available for Cell Type
+  selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[i])
+  
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    #not all genes are within dataset, exclude those
+    output <- data %>% dplyr::select(any_of(selected_genes$Gene)) 
+    if(length(colnames(output))>1){
+          output <- sapply(output, as.numeric)
+          rownames(output) <- data$Gene_Name
+          
+          #plot
+          my_heatmap <- pheatmap::pheatmap(output,main=Cell.Types[i],annotation_row = samples,scale="column")
+          #save heatmap
+          save_pheatmap_png(my_heatmap, paste(as.character(Cell.Types[i]),"gene_scaling.png",sep="")) 
+    }
+  }
+}
+```
+
+
+###Scaling based on entire image (average and SD of 3)
+for(i in 2:length(Cell.Types)){
+  #Select genes available for Cell Type
+  selected_genes <- Annotations %>% filter(Cell.Type == Cell.Types[i])
+  
+  if(nrow(selected_genes)>=2){
+    #filter genes by cell type
+    #not all genes are within dataset, exclude those
+    output <- data %>% dplyr::select(any_of(selected_genes$Gene)) 
+    if(length(colnames(output))>1){
+          output <- sapply(output, as.numeric)
+          rownames(output) <- data$Gene_Name
+          
+          #plot
+          my_heatmap <- pheatmap::pheatmap(output,main=Cell.Types[i],annotation_row = samples)
+          #save heatmap
+          save_pheatmap_png(my_heatmap, paste(as.character(Cell.Types[i]),"entire_image_scale.png",sep="")) 
+    }
+  }
+}
+
+
+
+

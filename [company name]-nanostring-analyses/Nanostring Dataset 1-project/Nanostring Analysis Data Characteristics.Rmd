@@ -1,0 +1,110 @@
+---
+title: "Nanostring Data Characteristics Dataset X"
+author: "Nathan T. Johnson"
+date: "4/9/2020"
+output:
+  pdf_document: default
+purpose: What are the general characteristics of the data and functional annotation available from Nanostring
+---
+
+
+```{r results='asis', echo=FALSE, include=FALSE,}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE)
+#load in libraries
+Packages <- c('tidyverse','ggplot2','openxlsx','RColorBrewer','Hmisc','icd','hrbrthemes','viridis','knitr','PCAtools','biomaRt')
+lapply(Packages, library, character.only = TRUE)
+```
+
+```{r function definitions, echo = FALSE}
+
+#read in all sheets from excel
+read_all_sheets = function(xlsxFile, ...) {
+  sheet_names = openxlsx::getSheetNames(xlsxFile)
+  sheet_list = as.list(rep(NA, length(sheet_names)))
+  names(sheet_list) = sheet_names
+  for (sn in sheet_names) {
+    sheet_list[[sn]] = openxlsx::read.xlsx(xlsxFile, sheet=sn, ...)
+  }
+  return(sheet_list)
+}
+
+```
+
+
+```{r data cleaning and setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+#set working directory
+setwd('C:/Users/Nathan/Dropbox/Company/Xsphera/@Data/Nanostring/')
+
+
+#Pull in Nanostring metadata and expression data
+Expression_Data <- read.csv('Expression Data.csv')
+Metadata <- read.csv('Metadata.csv')
+Genes <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List.csv')
+Annotations <- read.csv('Nanostring_LBL-10540-02_nCounter_NHP_Immunology_V2_Panel_Gene_List_Annotations.csv')
+
+#Pull in Flow Data
+#The first shows immune cells as a proportion of total CD45+
+
+CD45_flow <- read.csv('../Flow Data/percent CD45 - Nathan Modified.csv')
+
+#The other one has sheets with data from S1 or S3, as a proportion of all cells collected or as a proportion of live cells (as indicated). Let me know if you have any questions.
+all_cells_flow <- read_all_sheets('../Flow Data/immune profiling - P0003-31.xlsx')
+
+```
+
+# What are the characteristics of the samples?
+
+### Basic Setup
+
+```{r,echo=FALSE}
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date"))
+```
+
+### What comparisons can be made?
+
+```{r,echo=FALSE}
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date")) %>% group_by(Fraction) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date")) %>% group_by(RNA.Solution) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date")) %>% group_by(Tumor) %>% count() %>% knitr::kable()
+Metadata %>% dplyr::select(-c("File.Name","Sample.Name","Cartridge.ID","Lane.Number","Import.Date")) %>% group_by(Treatment) %>% count() %>% knitr::kable()
+```
+
+# What Do The Nanostring Probes Quantify?
+
+
+### What Gene functions are being quantified?
+
+Lists the number of functions that Nanostring has indicated the genes represent
+
+```{r,echo=FALSE}
+Annotations %>% colnames() %>% knitr::kable()
+
+```
+
+
+### How many genes represent each function type Information?
+
++ means the number of genes that ARE labelled as being associated with a function
+- means the number of genes that ARE NOT labelled as being associated with a function
+
+
+```{r,echo=FALSE}
+Annotations %>% group_by(Cell.Type) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Cellular.Stress) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Complement.System) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Death.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Extracellular.matrix.organization) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Fc.Receptor.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Innate.Immunity) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interferon.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Interleukin.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(NF.kB) %>% count() %>% knitr::kable()
+Annotations %>% group_by(MAPK.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Metabolism) %>% count() %>% knitr::kable()
+Annotations %>% group_by(TLR.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(VEGF.Signaling) %>% count() %>% knitr::kable()
+Annotations %>% group_by(Wnt.Signaling) %>% count() %>% knitr::kable()
+```
+
+
