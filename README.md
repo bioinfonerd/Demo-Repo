@@ -58,10 +58,36 @@ This project contains several projects that were part of a much larger effort to
 This project is dedicated to single-cell RNA sequencing analysis that contains detailed scRNAseq analysis, focusing on advanced computational workflows to understand cellular dynamics and gene expression profiles at the single-cell level. The client sought to understand how their drug targets influenced various aspects on the mouse models they deployed.
 
 ### 10. [company name]_mc38_scRNAseq-main-project
+
+This project was dedicated to a single-cell RNA sequencing analysis for a client that was evaluating several publically available datasets to gain insight into how they wish to proceed for their drug development with regards to targets.
+
 ### 11. cannaspy-main-project
+
+This project was a data gathering project for a couple of websites to webscrape their data into a dedicated format for future data analysis purposes.
+
 ### 12. communicating_with_synapse-master-project
+
+This project was designed to assist with automating of data formatting, syncing with a cloud based platform, and provide a general version controlled resource for data tracking.
+
 ### 13. datarail-master-project
+
+This system is specifically designed to support the design, analysis, and visualization of high-throughput dose-response experiments. The project involves the use of various tools and frameworks to facilitate these experiments, aiming to improve the efficiency and effectiveness of data handling and analysis processes in experimental settings.
+
 ### 14. mcmicro-master-project
+
+The "mcmicro-master-project" on GitHub, forked from the labsyspharm/mcmicro repository, is an extensive multiple-choice microscopy pipeline developed for processing multiplexed whole slide imaging and tissue microarrays. This end-to-end pipeline includes steps like stitching and registration, segmentation, and single-cell feature extraction. Each phase of the pipeline is designed to be containerized, enhancing portability across different computing environments.
+
+This comprehensive system allows researchers to handle complex imdaging data systematically, facilitating detailed analysis at the cellular level, which is critical in areas such as pathology and cancer research. The pipeline is supported by various grants and is part of collaborative efforts that underline its significance in advancing medical and biological research.
+
 ### 15. scRNASeq-pilot project
+
+This project is for a client that was working on establishing best practices for their single cell RNA-Seq projects for drug discovery applications. This analysis compared a couple of different vendors as well as as the pro's and con's on different analysis pipelines to gain understanding into their various drug discovery projects.
+
 ### 16. single_cell_RNAseq_Visualization-main-project
+
+This project was for a client that sought different single cell RNA-Seq visualization perspectives to gain insight into their drug discovery projects.
+
 ### 17. workflows-master-project
+
+This project purpose was to streamline and automate various workflows in order how to structure and execute bioinformatics workflows efficiently, ensuring scalability and reproducibility. This project used Nextflow, a workflow tool that simplifies the deployment and sharing of complex pipeline projects across different computational environments. This project incorporates a series of custom scripts (BASH, R, Python, etc.) that are managed consistently within the Nextflow framework, demonstrating best practices for building and maintaining reproducible scientific workflows. Key features of this project include 1) Use of Docker containers to ensure consistency across different computational environments, 2) Integration with batch schedulers like SLURM for efficient job management on computational clusters, 3) Configuration profiles allowing different settings for different execution environments, such as local or cloud-based systems.
+
