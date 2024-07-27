@@ -1,0 +1,98 @@
+tenx_files["10k_PBMCs_TotalSeq_B_3p"] = {
+    "tar_contents": null,
+    "pubdate": "2021-03-28",
+    "synopsis": "",
+    "pubname": "10k_PBMCs_TotalSeq_B_3p",
+    "files": [
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_library.csv",
+            "md5sum": "e747a78fa5e4b78c14ce6126ff0ea9e2",
+            "bytes": 290,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_library.csv"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_feature_ref.csv",
+            "md5sum": "b168d2c91af23225cfc040bb4aaf189a",
+            "bytes": 767,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_feature_ref.csv"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_metrics_summary.csv",
+            "md5sum": "a1267911f6c8f19a2cf45253ea7e28d6",
+            "bytes": 1279,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_metrics_summary.csv"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_feature_reference.csv",
+            "md5sum": "b168d2c91af23225cfc040bb4aaf189a",
+            "bytes": 767,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_feature_reference.csv"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_web_summary.html",
+            "md5sum": "a32dddc776b25c78e294babffdd34c9c",
+            "bytes": 4676686,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_web_summary.html"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_possorted_genome_bam.bam.bai",
+            "md5sum": "d8fc28267d2a03d37255bda101b5f79e",
+            "bytes": 10720456,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_possorted_genome_bam.bam.bai"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_analysis.tar.gz",
+            "md5sum": "f2a249b5f2686a1ee9271eb602a495b2",
+            "bytes": 34469891,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_analysis.tar.gz"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_filtered_feature_bc_matrix.h5",
+            "md5sum": "549f881ace5b7746dec4e7678455da9e",
+            "bytes": 32987089,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_filtered_feature_bc_matrix.h5"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_raw_feature_bc_matrix.h5",
+            "md5sum": "bd5145f2dfebf1068234775f63a171d5",
+            "bytes": 69108278,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_raw_feature_bc_matrix.h5"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_filtered_feature_bc_matrix.tar.gz",
+            "md5sum": "ea1304014a63901b424e6390814252a1",
+            "bytes": 86190311,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_filtered_feature_bc_matrix.tar.gz"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_cloupe.cloupe",
+            "md5sum": "141c9d67c6aa6de9deea566b1343d4d0",
+            "bytes": 118806548,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_cloupe.cloupe"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_raw_feature_bc_matrix.tar.gz",
+            "md5sum": "ca61d18e30ce907731ec6cd42faab5cb",
+            "bytes": 131483065,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_raw_feature_bc_matrix.tar.gz"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_molecule_info.h5",
+            "md5sum": "c1380b306448198f0448c0caf6f863ad",
+            "bytes": 544526391,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_molecule_info.h5"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_possorted_genome_bam.bam",
+            "md5sum": "6cffe0b44e5e19eba79e6f87eee5e87c",
+            "bytes": 37520956543,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_possorted_genome_bam.bam"
+        },
+        {
+            "fname": "10k_PBMCs_TotalSeq_B_3p_fastqs.tar",
+            "md5sum": "470d2d44431a551f2f61d2abc7f54a28",
+            "bytes": 47327805440,
+            "url": "https://s3-us-west-2.amazonaws.com/10x.files/samples/cell-exp/6.0.0/10k_PBMCs_TotalSeq_B_3p/10k_PBMCs_TotalSeq_B_3p_fastqs.tar"
+        }
+    ]
+};

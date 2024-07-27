@@ -1,0 +1,59 @@
+(function() {
+  $(function() {
+    var THRESHOLD, nav, nav_class;
+    if (window.location.href.indexOf("downloads") >= 0) {
+      $('.ans-section a[href*="downloads"]').addClass("current-page");
+    } else {
+      $(".ans-navmenu a").each(function() {
+        if ($(this).attr("href") === window.location.pathname) {
+          return $(this).addClass("current-page");
+        }
+      });
+    }
+    if (
+      window.location.pathname.indexOf("/genome-exome") >= 0 ||
+      window.location.pathname.indexOf("/samples/genome") >= 0
+    ) {
+      $("a.ans-topnav#genome-exome").addClass("ans-topnav-selected");
+    } else if (
+      window.location.pathname.indexOf("/single-cell") >= 0 ||
+      window.location.pathname.indexOf("/samples/cell") >= 0
+    ) {
+      $("a.ans-topnav#single-cell").addClass("ans-topnav-selected");
+    } else if (
+      window.location.pathname.indexOf("/de-novo-assembly") >= 0 ||
+      window.location.pathname.indexOf("/samples/assembly") >= 0
+    ) {
+      $("a.ans-topnav#de-novo-assembly").addClass("ans-topnav-selected");
+    } else {
+      $("a.ans-topnav#home").addClass("ans-topnav-selected");
+    }
+    THRESHOLD = 40;
+    nav = $("header");
+    nav_class = "undered";
+    $(window).scroll(function() {
+      var distance;
+      distance = $(this).scrollTop();
+      if (distance > THRESHOLD) {
+        return nav.addClass(nav_class);
+      } else {
+        if (nav.hasClass(nav_class)) {
+          return nav.removeClass(nav_class);
+        }
+      }
+    });
+    $(document).delegate('*[data-toggle="lightbox"]', "click", function(event) {
+      event.preventDefault();
+      return $(this).ekkoLightbox();
+    });
+    return $(".group-header").click(function() {
+      var $this, group;
+      $this = $(this);
+      group = $this.data("group");
+      $('.group-list[data-group="' + group + '"]').slideToggle();
+      return $('.group-disc[data-group="' + group + '"]').toggleClass(
+        "disclosure-rotated"
+      );
+    });
+  });
+}.call(this));

@@ -1,0 +1,779 @@
+/*!
+ * Stimpack
+ * Warning   : This file is generated, please do not edit
+ * Date      : 2018-05-07
+ */
+
+var spNavAnchors = function(nav)
+{
+    jQuery(nav).on('click', 'a[href*="#"]', function(e) {
+
+        var href = jQuery(this).attr('href'),
+            target = jQuery(href.substr(href.indexOf("#")));
+
+        if (target.length > 0)
+        {
+            e.preventDefault();
+            spScrollTo({target: target});
+        }
+    });
+};
+
+var spGetUrlParam = function(name, url)
+{
+    url = !url ? window.location.href : url;
+
+    var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(url);
+
+    if (!results)
+    {
+        return undefined;
+    }
+
+    return results[1] || undefined;
+};
+
+var spScrollToUrlAnchor = function() {
+
+    var target = jQuery(location.hash);
+
+    if (target.length < 1)
+    {
+        return;
+    }
+
+    window.scrollTo(0, 0);
+
+    if (target.hasClass('modal'))
+    {
+        target.modal('show');
+    }
+    else
+    {
+        spScrollTo({
+            target  : target,
+            speed   : 0,
+            force   : true
+        });
+
+        jQuery(window).load(function() {
+
+            spScrollTo({
+                target  : target,
+                speed   : 0,
+                force   : true
+            });
+        });
+    }
+};
+
+var spCreateCookie = function (name, value, minutes)
+{
+    var expires = "";
+
+    if (minutes)
+    {
+        var date = new Date();
+        date.setTime(date.getTime()+(minutes*60*1000));
+        expires = "; expires=" + date.toGMTString();
+    }
+
+    document.cookie = name + "=" + value + expires + "; path=/";
+};
+
+var spReadCookie = function (name)
+{
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+
+    for (var i = 0; i < ca.length; i++)
+    {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
+    }
+
+    return null;
+};
+
+// -------------------------------------------------------------------------- //
+// Newsletter form
+// -------------------------------------------------------------------------- //
+
+var spNewsletterForm = function(el)
+{
+    var _this = this,
+        root = jQuery(el);
+
+    this.el = {
+        root        : root,
+        form        : root.find('form'),
+        input       : root.find('input[name="email"]'),
+        submit      : root.find('button[type="submit"]'),
+        response    : root.find('.sp-form-response'),
+    };
+
+    this.submitting = false;
+
+    this.el.form.submit(function(e){
+
+        if (!_this.el.form.hasClass('sp-form-initiated'))
+        {
+            e.preventDefault();
+            _this.submit();
+            return false;
+        }
+    });
+
+    this.el.input.on('keyup change', function() {
+
+        if (_this.el.input.val().length > 0)
+        {
+            _this.el.root.addClass('filled');
+        }
+        else
+        {
+            _this.el.root.removeClass('filled');
+        }
+    });
+
+    return this;
+};
+
+spNewsletterForm.prototype.submit = function()
+{
+    if (this.submitting)
+    {
+        return;
+    }
+
+    this.submitting = true;
+
+    var _this = this,
+        iframe = jQuery('<iframe src="https://go.pardot.com/l/172142/2016-12-05/73dm1?email=' + this.el.input.val() + '" style="display:none;"></iframe>');
+
+    iframe.appendTo(this.el.root).on('load', function() {
+
+        try
+        {
+            pardotResponse = parseInt(iframe.contents().find('body').html());
+        }
+        catch(err)
+        {
+            console.log('Error reading response (blocked cross-origin frame), assuming success...');
+            pardotResponse = 1;
+        }
+
+        setTimeout(function() {
+
+            if (pardotResponse === 1)
+            {
+                var _ga;
+
+                _this.el.form[0].reset();
+                _this.el.response.html('<div class="text-success">Thank you for signing up!</div>');
+                _this.trackAnalytics();
+            }
+            else
+            {
+                response.html('<div class="text-danger">Error: please try again...</div>');
+            }
+
+            this.submitting = false;
+
+        }, 100);
+    });
+};
+
+
+spNewsletterForm.prototype.trackGoogleAnalytics = function(options)
+{
+    var _ga;
+
+    if (typeof ga != 'undefined')
+    {
+        _ga = ga;
+    }
+    else if (typeof __gaTracker != 'undefined')
+    {
+        _ga = __gaTracker;
+    }
+
+    if (typeof _ga != 'undefined')
+    {
+        var gaArgs = {
+            hitType         : 'event',
+            eventCategory   : 'Forms',
+            eventAction     : 'submitted',
+            eventLabel      : 'Newsletter Signup'
+        };
+
+        // Keep this ???
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push(gaArgs);
+
+        _ga('send', gaArgs);
+    }
+    else if (STIMPACK.isUserLoggedIn)
+    {
+        console.log('spForm: Missing Google Analytics...');
+    }
+};
+
+spNewsletterForm.prototype.trackFacebookAnalytics = function(options)
+{
+    if (typeof fbq != 'undefined')
+    {
+        var fbqArgs = {
+            eventLabel      : 'Lead',
+            content_name    : 'Form Submission - Newsletter Signup'
+        };
+
+        var eventLabel = fbqArgs.eventLabel;
+        delete fbqArgs.eventLabel;
+
+        fbq('track', eventLabel, fbqArgs);
+    }
+    else if (STIMPACK.isUserLoggedIn)
+    {
+        console.log('spForm: Missing Facebook Analytics...');
+    }
+};
+
+spNewsletterForm.prototype.trackAnalytics = function()
+{
+    this.trackGoogleAnalytics();
+    this.trackFacebookAnalytics();
+};
+
+(function($) {
+
+    var spAttendeesForm = function(el, options)
+    {
+        var _this = this,
+            container = $(el);
+
+        options = options || {};
+
+        // Elements
+        this.el = {
+            container			: container,
+            primaryAttendee     : container.find('.sp-attendees-form-primary-attendee'),
+            attendeeContainer   : container.find('.sp-attendees-form-list'),
+            responseContainer   : container.find('.sp-attendees-form-response')
+        };
+
+        // Options
+        this.defaultOptions = {
+            primaryFormName     : 'training_registration_attendee',
+            secondaryFormName   : 'training_registration_data_analysis_user',
+            formTemplate        : this.el.attendeeContainer.html()
+        };
+
+        this.options = (typeof options === 'object') ? $.extend({}, this.defaultOptions, options) : this.defaultOptions;
+
+        this.initPrimaryAttendee();
+        this.initAttendees();
+
+        container.on('click', '.sp-attendees-form-submit', function(e) {
+            e.preventDefault();
+            _this.submit();
+        });
+
+        this.updateStatus('initiated');
+        this.el.container.addClass('sp-attendees-form-initiated');
+
+        return this;
+    };
+
+    spAttendeesForm.prototype.isBusy = function()
+    {
+        var busy = false;
+
+        if ('submitting' == this.el.primaryAttendee.attr('data-status'))
+        {
+            busy = true;
+        }
+
+        this.el.attendeeContainer.find('form').each(function() {
+
+            if ('submitting' == $(this).attr('data-status'))
+            {
+                busy = true;
+            }
+        });
+
+        return busy;
+    };
+
+    spAttendeesForm.prototype.updateStatus = function(status) {
+
+        if (status)
+        {
+            this.status = status;
+        }
+
+        this.el.container.attr('data-status', this.status);
+    };
+
+
+    spAttendeesForm.prototype.checkProgress = function() {
+
+        this.el.responseContainer.html('');
+
+        if (this.isBusy())
+        {
+            return;
+        }
+
+        var success = true;
+
+        this.el.attendeeContainer.find('form').each(function() {
+
+            if ('success' != $(this).attr('data-status'))
+            {
+                success = false;
+            }
+        });
+
+        if (success)
+        {
+            this.el.responseContainer.html('Thank you for registering!');
+            this.updateStatus('success');
+        }
+        else
+        {
+            this.el.responseContainer.html('Something went wrong please try again...');
+            this.updateStatus('error');
+        }
+    };
+
+    /* ---------------------------------------------------------------------- */
+    /* Primary Attendee
+    /* ---------------------------------------------------------------------- */
+
+    spAttendeesForm.prototype.initPrimaryAttendee = function()
+    {
+        var _this = this;
+
+        if (this.el.primaryAttendee.length > 0)
+        {
+            this.el.primaryAttendee.spForm({
+                name            : this.options.primaryFormName,
+                resetOnSuccess  : false,
+                onSubmitData    : function(data) {
+
+                    // TODO: make this dynamic
+                    if (_this.el.primaryAttendee.length > 0)
+                    {
+                        var primaryAttendee = spGetFormValue(_this.el.primaryAttendee);
+
+                        data.comments = "Primary Attendee:\n " +
+                        "Where will you use the Chromium System?\n " + (primaryAttendee.location ? primaryAttendee.location : null);
+
+                        delete(data.location);
+                    }
+
+                    return data;
+                },
+                onAjaxDone      : function(response) {
+
+                    if (response && response.errors && response.errors.length === 0)
+                    {
+                        _this.el.primaryAttendee.find('input').attr('readonly', true);
+
+                        if (_this.el.attendeeContainer.find('form').length > 0)
+                        {
+                            _this.submitAttendees.call(_this);
+                        }
+                        else
+                        {
+                            _this.checkProgress.call(_this);
+                        }
+                    }
+                    else
+                    {
+                        _this.checkProgress.call(_this);
+                    }
+                }
+            });
+        }
+    };
+
+    /* ---------------------------------------------------------------------- */
+    /* Attendees
+    /* ---------------------------------------------------------------------- */
+
+    spAttendeesForm.prototype.initAttendees = function()
+    {
+        var _this = this;
+
+        _this.el.attendeeContainer.html('');
+        //_this.addAttendee();
+
+        this.el.container.find('.sp-attendees-form-list-add').on('click', function(e) {
+            e.preventDefault();
+            _this.addAttendee();
+        });
+
+        _this.el.attendeeContainer.on('click', '.sp-attendees-form-list-remove', function(e) {
+            e.preventDefault();
+            $(this).closest('form').remove();
+        });
+    };
+
+    spAttendeesForm.prototype.addAttendee = function()
+    {
+        var _this = this,
+            newAttendee = $(this.options.formTemplate);
+
+        newAttendee.spForm({
+            name            : this.options.secondaryFormName,
+            resetOnSuccess  : false,
+            onAjaxDone      : function(response) {
+
+                if (response && response.errors && response.errors.length === 0)
+                {
+                    newAttendee.find('input').attr('readonly', true);
+                }
+
+                setTimeout(function () {
+                    _this.checkProgress();
+                }, 200);
+            }
+        });
+
+        this.el.attendeeContainer.append(newAttendee);
+    };
+
+    spAttendeesForm.prototype.submitAttendees = function()
+    {
+        var comments = '';
+
+        // TODO: make this dynamic
+        if (this.el.primaryAttendee.length > 0)
+        {
+            var primaryAttendee = spGetFormValue(this.el.primaryAttendee);
+
+            comments = "Primary Attendee:\n " +
+                "First Name: " + (primaryAttendee.first_name ? primaryAttendee.first_name : null) + "\n " +
+                "Last Name: " + (primaryAttendee.last_name ? primaryAttendee.last_name : null) + "\n " +
+                "Email: " + (primaryAttendee.email ? primaryAttendee.email : null);
+        }
+
+        this.el.attendeeContainer.find('form').each(function()
+        {
+            var form = $(this);
+
+            if ('success' != form.attr('data-status'))
+            {
+                form.find('[name="comments"]').val(comments);
+                form.submit();
+            }
+        });
+    };
+
+    /* ---------------------------------------------------------------------- */
+    /*
+    /* ---------------------------------------------------------------------- */
+
+    spAttendeesForm.prototype.submit = function()
+    {
+        if (!this.isBusy())
+        {
+            if (this.el.primaryAttendee.length > 0 && this.el.primaryAttendee.attr('data-status') !== 'success')
+            {
+                console.log('spAttendeesForm submit primary');
+                this.el.primaryAttendee.submit();
+            }
+            else
+            {
+                console.log('spAttendeesForm submit attendees');
+                this.submitAttendees();
+            }
+        }
+    };
+
+    /* ---------------------------------------------------------------------- */
+    /*
+    /* ---------------------------------------------------------------------- */
+
+    $.fn.spAttendeesForm = function(options)
+    {
+        return this.each(function() {
+
+            options = options || $(this).data('sp-attendees-form');
+
+            this.spAttendeesForm = new spAttendeesForm(this, options);
+        });
+    };
+
+    // Declaration
+    $('.sp-attendees-form, [data-sp-attendees-form]').each(function() {
+        $(this).spAttendeesForm();
+    });
+
+})(jQuery);
+
+// -------------------------------------------------------------------------- //
+// Header
+// -------------------------------------------------------------------------- //
+
+var spHeader = function spHeader()
+{
+    var _this = this,
+        root = jQuery('#header');
+
+    this.el = {
+        root                    : root,
+        container               : root.find('.header-container'),
+        navigationContainer     : root.find('.nav-container'),
+        navigation              : root.find('.navigation')
+    };
+
+    this.init();
+    this.update();
+
+    return this;
+};
+
+spHeader.prototype.init = function()
+{
+    var _this = this;
+
+    this.el.navigation.find('> li > a').on('click', function(e) {
+
+        var parent = jQuery(this).closest('li');
+
+        if (jQuery(window).width() < 1180 && parent.find('> .sub-menu').length > 0) {
+            e.preventDefault();
+            _this.toggleSubMenu(parent);
+        }
+	});
+
+    this.el.navigation.on('click', 'a[href*="#"]', function(e) {
+
+        var link = jQuery(this),
+            href = link.attr('href');
+
+        if ('#' === href)
+        {
+            e.preventDefault();
+            return;
+        }
+
+        var target = jQuery(href.substr(href.indexOf("#")));
+
+        if (target.length > 0)
+        {
+            e.preventDefault();
+            _this.el.navigationContainer.collapse('hide');
+            toggleSubMenu(link.parentsUntil('.navigation').last(), 'hide');
+            spScroll({target: target});
+        }
+    });
+
+    this.el.navigation.hoverIntent({
+        over: function() {
+
+            if (jQuery(window).width() > 1179)
+            {
+                jQuery(this).addClass('sub-menu-expanded');
+        		_this.toggleSubMenu(jQuery(this), 'show');
+            }
+    	},
+        out: function() {
+
+            if (jQuery(window).width() > 1179)
+            {
+                jQuery(this).removeClass('sub-menu-expanded');
+        		_this.toggleSubMenu(jQuery(this), 'hide');
+            }
+    	},
+        selector: '> li',
+        timeout: 200,
+        interval: 200
+    });
+
+    jQuery(window).on('scroll', function() {
+        _this.updateScroll();
+    });
+
+    jQuery(window).resize(function() {
+        _this.update();
+    });
+};
+
+spHeader.prototype.update = function()
+{
+    var navContent = this.el.root.find('.nav-container-inner'),
+        offset = this.el.container.outerHeight();
+
+    if (jQuery(window).width() <= 1179)
+    {
+        navContent.css('max-height', (jQuery(window).height() - offset));
+        navContent.find('> ul').css('min-height', (jQuery(window).height() - offset));
+    }
+    else
+    {
+        navContent.css('max-height', 'none');
+        navContent.find('> ul').css('min-height', 0);
+    }
+
+    this.updateScroll();
+};
+
+spHeader.prototype.updateScroll = function()
+{
+    var scrollTop = jQuery(window).scrollTop();
+
+    // Reach Top
+    if (scrollTop >= this.el.root.offset().top)
+    {
+        jQuery('body').addClass('header-top-reached');
+    }
+    else
+    {
+        jQuery('body').removeClass('header-top-reached');
+    }
+
+    // Reach Bottom
+    if (scrollTop >= (this.el.root.offset().top + this.el.root.height()))
+    {
+        jQuery('body').addClass('header-bottom-reached');
+    }
+    else
+    {
+        jQuery('body').removeClass('header-bottom-reached');
+    }
+};
+
+
+spHeader.prototype.toggleSubMenu = function(container, action)
+{
+    var subMenu = container.find('> .sub-menu').first();
+
+    subMenu.css('max-height', jQuery(window).height() - jQuery('.header-fixed').outerHeight());
+
+    if (subMenu.length > 0) {
+
+        if ('show' == action) {
+            subMenu.stop().slideDown(300);
+        }
+        else if ('hide' == action) {
+            subMenu.stop().slideUp(300);
+        }
+        else {
+            subMenu.stop().slideToggle(300);
+        }
+    }
+};
+
+// -------------------------------------------------------------------------- //
+// Footer
+// -------------------------------------------------------------------------- //
+
+var spFooter = function spFooter()
+{
+    var _this = this,
+        root = jQuery('#footer');
+
+    this.el = {
+        root: root
+    };
+
+    new spNewsletterForm(this.el.root.find('.newsletter-form'));
+
+    return this;
+};
+
+// -------------------------------------------------------------------------- //
+// Remote Template
+// -------------------------------------------------------------------------- //
+
+var spRemoteTemplate = function spRemoteTemplate()
+{
+    var _this = this;
+
+    this.el = {
+        header: jQuery('#header.header-remote'),
+        footer: jQuery('#footer.footer-remote')
+    };
+
+    jQuery.each(this.el, function() {
+
+        if (jQuery(this).length > 0)
+        {
+            _this.getRemote();
+            return false;
+        }
+    });
+
+
+    return this;
+};
+
+spRemoteTemplate.prototype.getRemote = function()
+{
+    var _this = this;
+
+    if (typeof Storage !== 'undefined' && sessionStorage.tenxTemplateParts && '{' === sessionStorage.tenxTemplateParts.charAt(0))
+    {
+        this.data = JSON.parse(sessionStorage.tenxTemplateParts);
+        this.insertAll();
+    }
+
+    if (!this.data)
+    {
+        jQuery.ajax({
+            url		   : STIMPACK.ajaxUrl,
+            type	   : 'post',
+            data	   : {
+                action  : 'tenx_ajax_template_parts',
+            },
+            dataType   : 'json',
+            success: function(data) {
+
+                _this.data = data;
+
+                if (typeof Storage !== 'undefined')
+                {
+                    sessionStorage.tenxTemplateParts = JSON.stringify(data);
+                }
+
+                _this.insertAll();
+            },
+            error: function(data) {}
+        });
+    }
+};
+
+spRemoteTemplate.prototype.insertAll = function()
+{
+    var keys = Object.keys(this.el);
+
+    for (i = 0; i < keys.length; i++)
+    {
+        if (this.el[keys[i]].length > 0 && this.data[keys[i]])
+        {
+            var newEl = jQuery(this.data[keys[i]]);
+
+            this.el[keys[i]].replaceWith(newEl);
+            this.el[keys[i]] = newEl;
+        }
+    }
+
+    if (this.el.header.length > 0)
+    {
+        setTimeout(function() {
+            new spHeader();
+        }, 100);
+    }
+
+    if (this.el.footer.length > 0)
+    {
+        setTimeout(function() {
+            new spFooter();
+        }, 100);
+    }
+};

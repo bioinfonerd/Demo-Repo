@@ -1,0 +1,1666 @@
+(function () {
+  var app,
+    defs,
+    loupedemos,
+    indexOf =
+      [].indexOf ||
+      function (item) {
+        for (var i = 0, l = this.length; i < l; i++) {
+          if (i in this && this[i] === item) return i;
+        }
+        return -1;
+      };
+
+  app = angular.module("app", ["ui.bootstrap", "ngSanitize"]);
+
+  defs = {
+    longranger: {
+      fid: ["phased_possorted_bam.bam"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "summary.csv",
+        "phased_possorted_bam.bam",
+        "phased_possorted_bam.bam.bai",
+        "phased_variants.vcf.gz",
+        "phased_variants.vcf.gz.tbi",
+        "large_svs.vcf.gz",
+        "large_svs.vcf.gz.tbi",
+        "large_sv_calls.bedpe",
+        "large_sv_candidates.bedpe",
+        "dels.vcf.gz",
+        "dels.vcf.gz.tbi",
+        "loupe.loupe"
+      ],
+      outputdocs: "/genome-exome/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "summary.csv": "Summary CSV",
+        "phased_possorted_bam.bam": "Phased, barcoded, sorted BAM",
+        "phased_possorted_bam.bam.bai": "Phased, barcoded, sorted BAM index",
+        "phased_variants.vcf.gz": "Phased variant calls VCF",
+        "phased_variants.vcf.gz.tbi": "Phased variant calls VCF index",
+        "large_svs.vcf.gz": "Large-scale SVs VCF",
+        "large_svs.vcf.gz.tbi": "Large-scale SVs VCF index",
+        "large_sv_calls.bedpe": "Large-scale SV calls BEDPE",
+        "large_sv_candidates.bedpe": "Large-scale SV candidates BEDPE",
+        "dels.vcf.gz": "Mid-scale deletions VCF",
+        "dels.vcf.gz.tbi": "Mid-scale deletions VCF index",
+        "loupe.loupe": "Loupe browser file"
+      }
+    },
+    supernova: {
+      fid: ["raw.fasta.gz"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "summary.txt",
+        "summary_cs.csv",
+        "raw.fasta.gz",
+        "megabubbles.fasta.gz",
+        "pseudohap.fasta.gz",
+        "pseudohap2.1.fasta.gz",
+        "pseudohap2.1.idx",
+        "pseudohap2.2.fasta.gz",
+        "pseudohap2.2.idx",
+        "clones.fasta.gz"
+      ],
+      outputdocs:
+        "/de-novo-assembly/software/pipelines/latest/output/generating",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "summary.txt": "Summary TXT",
+        "summary_cs.csv": "Summary CSV",
+        "raw.fasta.gz": "Raw FASTA",
+        "megabubbles.fasta.gz": "Megabubbles-style FASTA",
+        "pseudohap.fasta.gz": "Pseudohap-style FASTA",
+        "pseudohap2.1.fasta.gz": "Pseudohap2-style FASTA (Hap 1)",
+        "pseudohap2.1.idx": "Pseudohap2-style index (Hap 1)",
+        "pseudohap2.2.fasta.gz": "Pseudohap2-style FASTA (Hap 2)",
+        "pseudohap2.2.idx": "Pseudohap2-style index (Hap 2)",
+        "clones.fasta.gz": "GenBank clone FASTA"
+      }
+    },
+    multi6_shared: {
+      fid: ["count_raw_molecule_info.h5"],
+      inputs: ["fastqs.tar", "config.csv", "count_feature_reference.csv", "vdj_reference.tar.gz"],
+      outputs: [
+        "count_raw_cloupe.cloupe",
+        "count_raw_feature_bc_matrix.tar.gz",
+        "count_raw_feature_bc_matrix.h5",
+        "count_raw_molecule_info.h5",
+        "count_unassigned_alignments.bam",
+        "count_unassigned_alignments.bam.bai",
+        "multiplexing_analysis_assignment_confidence_table.csv",
+        "multiplexing_analysis_cells_per_tag.json",
+        "multiplexing_analysis_tag_calls_per_cell.csv",
+        "multiplexing_analysis_tag_calls_summary.csv",
+        "vdj_b_all_contig_annotations.bed",
+        "vdj_b_all_contig_annotations.csv",
+        "vdj_b_all_contig_annotations.json",
+        "vdj_b_all_contig.bam",
+        "vdj_b_all_contig.bam.bai",
+        "vdj_b_all_contig.fasta",
+        "vdj_b_all_contig.fasta.fai",
+        "vdj_b_all_contig.fastq",
+        "vdj_t_all_contig_annotations.bed",
+        "vdj_t_all_contig_annotations.csv",
+        "vdj_t_all_contig_annotations.json",
+        "vdj_t_all_contig.bam",
+        "vdj_t_all_contig.bam.bai",
+        "vdj_t_all_contig.fasta",
+        "vdj_t_all_contig.fasta.fai",
+        "vdj_t_all_contig.fastq"
+      ],
+      outputdocs: "",
+      descs: {
+        "config.csv": "Multi Config CSV",
+        "fastqs.tar": "FASTQs",
+        "count_feature_reference.csv": "Feature Reference CSV",
+        "vdj_reference.tar.gz": "VDJ reference",
+        "count_raw_cloupe.cloupe": "Loupe Browser visualization file (CLOUPE)",
+        "count_raw_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (raw)",
+        "count_raw_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (raw)",
+        "count_raw_molecule_info.h5": "Gene Expression - Raw per-molecule read information",
+        "count_unassigned_alignments.bam": "Gene Expression - Genome-aligned unassigned BAM",
+        "count_unassigned_alignments.bam.bai": "Gene Expression - Genome-aligned unassigned BAM index",
+        "multiplexing_analysis_assignment_confidence_table.csv": "Multiplexing Analysis - Tag assignment confidence (CSV)",
+        "multiplexing_analysis_cells_per_tag.json": "Multiplexing Analysis - Cells per Tag (JSON)",
+        "multiplexing_analysis_tag_calls_per_cell.csv": "Multiplexing Analysis - Number of Calls per Cell (CSV)",
+        "multiplexing_analysis_tag_calls_summary.csv": "Multiplexing Analysis - Tag Call Summary (CSV)",
+        "vdj_b_all_contig_annotations.bed": "VDJ Ig - All contig annotations (BED)",
+        "vdj_b_all_contig_annotations.csv": "VDJ Ig - All contig annotations (CSV)",
+        "vdj_b_all_contig_annotations.json":
+          "VDJ Ig - All contig annotations (JSON)",
+        "vdj_b_all_contig.bam": "VDJ Ig - Read-contig alignments (BAM)",
+        "vdj_b_all_contig.bam.bai": "VDJ Ig - Read-contig alignment index (BAI)",
+        "vdj_b_all_contig.fasta": "VDJ Ig - All-contig FASTA",
+        "vdj_b_all_contig.fasta.fai": "VDJ Ig - All-contig FASTA index (FAI)",
+        "vdj_b_all_contig.fastq": "VDJ Ig - All-contig FASTQ",
+        "vdj_t_all_contig_annotations.bed":
+          "VDJ TCR - All contig annotations (BED)",
+        "vdj_t_all_contig_annotations.csv":
+          "VDJ TCR - All contig annotations (CSV)",
+        "vdj_t_all_contig_annotations.json":
+          "VDJ TCR - All contig annotations (JSON)",
+        "vdj_t_all_contig.bam": "VDJ TCR - Read-contig alignments (BAM)",
+        "vdj_t_all_contig.bam.bai": "VDJ TCR - Read-contig alignment index (BAI)",
+        "vdj_t_all_contig.fasta": "VDJ TCR - All-contig FASTA",
+        "vdj_t_all_contig.fasta.fai": "VDJ TCR - All-contig FASTA index (FAI)",
+        "vdj_t_all_contig.fastq": "VDJ TCR - All-contig FASTQ"
+      }
+    },
+    multi6_per_sample: {
+      fid: ["count_sample_molecule_info.h5"],
+      inputs: [
+      ],
+      outputs: [
+        "web_summary.html",
+        "metrics_summary.csv",
+        "count_cloupe.cloupe",
+        "count_sample_alignments.bam",
+        "count_sample_alignments.bam.bai",
+        "count_sample_barcodes.csv",
+        "count_sample_feature_bc_matrix.h5",
+        "count_sample_feature_bc_matrix.tar.gz",
+        "count_sample_molecule_info.h5",
+        "count_feature_reference.csv",
+        "count_analysis.tar.gz",
+        "count_crispr_analysis.tar.gz",
+        "count_target_panel.csv",
+        "vdj_b_airr_rearrangement.tsv",
+        "vdj_b_cell_barcodes.json",
+        "vdj_b_clonotypes.csv",
+        "vdj_b_concat_ref.bam",
+        "vdj_b_concat_ref.bam.bai",
+        "vdj_b_concat_ref.fasta",
+        "vdj_b_concat_ref.fasta.fai",
+        "vdj_b_consensus_annotations.csv",
+        "vdj_b_consensus.bam",
+        "vdj_b_consensus.bam.bai",
+        "vdj_b_consensus.fasta",
+        "vdj_b_consensus.fasta.fai",
+        "vdj_b_filtered_contig_annotations.csv",
+        "vdj_b_filtered_contig.fasta",
+        "vdj_b_filtered_contig.fastq",
+        "vdj_b_vdj_contig_info.pb",
+        "vdj_b_vloupe.vloupe",
+        "vdj_t_airr_rearrangement.tsv",
+        "vdj_t_cell_barcodes.json",
+        "vdj_t_clonotypes.csv",
+        "vdj_t_concat_ref.bam",
+        "vdj_t_concat_ref.bam.bai",
+        "vdj_t_concat_ref.fasta",
+        "vdj_t_concat_ref.fasta.fai",
+        "vdj_t_consensus_annotations.csv",
+        "vdj_t_consensus.bam",
+        "vdj_t_consensus.bam.bai",
+        "vdj_t_consensus.fasta",
+        "vdj_t_consensus.fasta.fai",
+        "vdj_t_filtered_contig_annotations.csv",
+        "vdj_t_filtered_contig.fasta",
+        "vdj_t_filtered_contig.fastq",
+        "vdj_t_vdj_contig_info.pb",
+        "vdj_t_vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "web_summary.html": "Summary HTML",
+        "metrics_summary.csv": "Summary CSV",
+        "count_cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "count_sample_alignments.bam": "Gene Expression - Genome-aligned BAM",
+        "count_sample_alignments.bam.bai":
+          "Gene Expression - Genome-aligned BAM index",
+        "count_sample_barcodes.csv": "Gene Expression - Sample barcodes",
+        "count_sample_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (per-sample)",
+        "count_sample_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (per-sample)",
+        "count_sample_molecule_info.h5": "Gene Expression - Per-molecule read information",
+        "count_feature_reference.csv": "Gene Expression - Feature Reference",
+        "count_analysis.tar.gz": "Gene Expression - Clustering analysis",
+        "count_crispr_analysis.tar.gz": "Gene Expression - CRISPR analysis",
+        "count_target_panel.csv": "Gene Expression - Target Panel",
+        "vdj_b_airr_rearrangement.tsv": "VDJ Ig - AIRR rearrangement (TSV)",
+        "vdj_b_cell_barcodes.json": "VDJ Ig - Cell Barcodes (JSON)",
+        "vdj_b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "vdj_b_concat_ref.bam": "VDJ Ig - Concatenated Segments (BAM)",
+        "vdj_b_concat_ref.bam.bai": "VDJ Ig - Concatenated Segments index (BAI)",
+        "vdj_b_concat_ref.fasta": "VDJ Ig - Concatenated Segments (FASTA)",
+        "vdj_b_concat_ref.fasta.fai": "VDJ Ig - Concatenated Segments index (FAI)",
+        "vdj_b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "vdj_b_consensus.bam": "VDJ Ig - Clonotype consensus BAM",
+        "vdj_b_consensus.bam.bai": "VDJ Ig - Clonotype consensus index BAI",
+        "vdj_b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "vdj_b_consensus.fasta.fai": "VDJ Ig - Clonotype consensus index FAI",
+        "vdj_b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "vdj_b_filtered_contig.fasta": "VDJ Ig - Filtered contig sequences FASTA",
+        "vdj_b_filtered_contig.fastq": "VDJ Ig - Filtered contig sequences FASTQ",
+        "vdj_b_vdj_contig_info.pb": "VDJ Ig - All contig info (ProtoBuf)",
+        "vdj_b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "vdj_t_airr_rearrangement.tsv": "VDJ TCR - AIRR rearrangement (TSV)",
+        "vdj_t_cell_barcodes.json": "VDJ TCR - Cell Barcodes (JSON)",
+        "vdj_t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "vdj_t_concat_ref.bam": "VDJ TCR - Concatenated Segments (BAM)",
+        "vdj_t_concat_ref.bam.bai": "VDJ TCR - Concatenated Segments index (BAI)",
+        "vdj_t_concat_ref.fasta": "VDJ TCR - Concatenated Segments (FASTA)",
+        "vdj_t_concat_ref.fasta.fai": "VDJ TCR - Concatenated Segments index (FAI)",
+        "vdj_t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "vdj_t_consensus.bam": "VDJ TCR - Clonotype consensus BAM",
+        "vdj_t_consensus.bam.bai": "VDJ TCR - Clonotype consensus index BAI",
+        "vdj_t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "vdj_t_consensus.fasta.fai": "VDJ TCR - Clonotype consensus index FAI",
+        "vdj_t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "vdj_t_filtered_contig.fasta": "VDJ TCR - Filtered contig sequences FASTA",
+        "vdj_t_filtered_contig.fastq": "VDJ TCR - Filtered contig sequences FASTQ",
+        "vdj_t_vdj_contig_info.pb": "VDJ TCR - All contig info (ProtoBuf)",
+        "vdj_t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+    multi_aggr: {
+      fid: ["aggregation.csv"],
+      inputs: [
+        "aggregation.csv",
+        "vdj_reference.tar.gz"
+      ],
+      outputs: [
+        "web_summary.html",
+        "count_filtered_feature_bc_matrix.h5",
+        "count_filtered_feature_bc_matrix.tar.gz",
+        "count_raw_feature_bc_matrix.h5",
+        "count_raw_feature_bc_matrix.tar.gz",
+        "count_analysis.tar.gz",
+        "count_summary.json",
+        "count_cloupe.cloupe",
+        "vdj_b_clonotypes.csv",
+        "vdj_b_consensus_annotations.csv",
+        "vdj_b_consensus.fasta",
+        "vdj_b_filtered_contig_annotations.csv",
+        "vdj_b_vloupe.vloupe",
+        "vdj_t_clonotypes.csv",
+        "vdj_t_consensus_annotations.csv",
+        "vdj_t_consensus.fasta",
+        "vdj_t_filtered_contig_annotations.csv",
+        "vdj_t_vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "aggregation.csv": "Inputs CSV",
+        "vdj_reference.tar.gz": "VDJ reference",
+        "web_summary.html": "Multi - Summary HTML",
+        "count_filtered_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (filtered)",
+        "count_filtered_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (filtered)",
+        "count_raw_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (raw)",
+        "count_raw_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (raw)",
+        "count_analysis.tar.gz": "Gene Expression - Clustering analysis",
+        "count_summary.json": "Gene Expression - Summary JSON",
+        "count_cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "vdj_b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "vdj_b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "vdj_b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "vdj_b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "vdj_b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "vdj_t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "vdj_t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "vdj_t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "vdj_t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "vdj_t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+    multi_gex_vdj_t_vdj_b_fb: {
+      fid: ["config.csv"],
+      inputs: [
+        "fastqs.tar",
+        "feature_ref.csv",
+        "config.csv",
+        "vdj_reference.tar.gz"
+      ],
+      outputs: [
+        "web_summary.html",
+        "count_possorted_genome_bam.bam",
+        "count_possorted_genome_bam.bam.bai",
+        "count_molecule_info.h5",
+        "count_filtered_feature_bc_matrix.h5",
+        "count_filtered_feature_bc_matrix.tar.gz",
+        "count_raw_feature_bc_matrix.h5",
+        "count_raw_feature_bc_matrix.tar.gz",
+        "count_analysis.tar.gz",
+        "count_crispr_analysis.tar.gz",
+        "count_metrics_summary.csv",
+        "count_cloupe.cloupe",
+        "vdj_b_airr_rearrangement.tsv",
+        "vdj_b_all_contig_annotations.bed",
+        "vdj_b_all_contig_annotations.csv",
+        "vdj_b_all_contig_annotations.json",
+        "vdj_b_all_contig.bam",
+        "vdj_b_all_contig.bam.bai",
+        "vdj_b_all_contig.fasta",
+        "vdj_b_all_contig.fasta.fai",
+        "vdj_b_all_contig.fastq",
+        "vdj_b_clonotypes.csv",
+        "vdj_b_concat_ref.bam",
+        "vdj_b_concat_ref.bam.bai",
+        "vdj_b_concat_ref.fasta",
+        "vdj_b_concat_ref.fasta.fai",
+        "vdj_b_consensus_annotations.csv",
+        "vdj_b_consensus_annotations.json",
+        "vdj_b_consensus.bam",
+        "vdj_b_consensus.bam.bai",
+        "vdj_b_consensus.fasta",
+        "vdj_b_consensus.fasta.fai",
+        "vdj_b_consensus.fastq",
+        "vdj_b_filtered_contig_annotations.csv",
+        "vdj_b_filtered_contig.fasta",
+        "vdj_b_filtered_contig.fastq",
+        "vdj_b_metrics_summary.csv",
+        "vdj_b_vdj_contig_info.pb",
+        "vdj_b_vloupe.vloupe",
+        "vdj_t_airr_rearrangement.tsv",
+        "vdj_t_all_contig_annotations.bed",
+        "vdj_t_all_contig_annotations.csv",
+        "vdj_t_all_contig_annotations.json",
+        "vdj_t_all_contig.bam",
+        "vdj_t_all_contig.bam.bai",
+        "vdj_t_all_contig.fasta",
+        "vdj_t_all_contig.fasta.fai",
+        "vdj_t_all_contig.fastq",
+        "vdj_t_clonotypes.csv",
+        "vdj_t_concat_ref.bam",
+        "vdj_t_concat_ref.bam.bai",
+        "vdj_t_concat_ref.fasta",
+        "vdj_t_concat_ref.fasta.fai",
+        "vdj_t_consensus_annotations.csv",
+        "vdj_t_consensus_annotations.json",
+        "vdj_t_consensus.bam",
+        "vdj_t_consensus.bam.bai",
+        "vdj_t_consensus.fasta",
+        "vdj_t_consensus.fasta.fai",
+        "vdj_t_consensus.fastq",
+        "vdj_t_filtered_contig_annotations.csv",
+        "vdj_t_filtered_contig.fasta",
+        "vdj_t_filtered_contig.fastq",
+        "vdj_t_metrics_summary.csv",
+        "vdj_t_vdj_contig_info.pb",
+        "vdj_t_vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "config.csv": "Multi Config CSV",
+        "fastqs.tar": "FASTQs",
+        "feature_ref.csv": "Feature Reference CSV",
+        "vdj_reference.tar.gz": "VDJ reference",
+        "web_summary.html": "Multi - Summary HTML",
+        "count_possorted_genome_bam.bam": "Gene Expression - Genome-aligned BAM",
+        "count_possorted_genome_bam.bam.bai":
+          "Gene Expression - Genome-aligned BAM index",
+        "count_molecule_info.h5": "Gene Expression - Per-molecule read information",
+        "count_filtered_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (filtered)",
+        "count_filtered_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (filtered)",
+        "count_raw_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (raw)",
+        "count_raw_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (raw)",
+        "count_analysis.tar.gz": "Gene Expression - Clustering analysis",
+        "count_crispr_analysis.tar.gz": "Gene Expression - CRISPR analysis",
+        "count_metrics_summary.csv": "Gene Expression - Summary CSV",
+        "count_cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "vdj_b_airr_rearrangement.tsv": "VDJ Ig - AIRR rearrangement (TSV)",
+        "vdj_b_all_contig_annotations.bed": "VDJ Ig - All contig annotations (BED)",
+        "vdj_b_all_contig_annotations.csv": "VDJ Ig - All contig annotations (CSV)",
+        "vdj_b_all_contig_annotations.json":
+          "VDJ Ig - All contig annotations (JSON)",
+        "vdj_b_all_contig.bam": "VDJ Ig - Read-contig alignments (BAM)",
+        "vdj_b_all_contig.bam.bai": "VDJ Ig - Read-contig alignment index (BAI)",
+        "vdj_b_all_contig.fasta": "VDJ Ig - All-contig FASTA",
+        "vdj_b_all_contig.fasta.fai": "VDJ Ig - All-contig FASTA index (FAI)",
+        "vdj_b_all_contig.fastq": "VDJ Ig - All-contig FASTQ",
+        "vdj_b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "vdj_b_concat_ref.bam": "VDJ Ig - Concatenated Segments (BAM)",
+        "vdj_b_concat_ref.bam.bai": "VDJ Ig - Concatenated Segments index (BAI)",
+        "vdj_b_concat_ref.fasta": "VDJ Ig - Concatenated Segments (FASTA)",
+        "vdj_b_concat_ref.fasta.fai": "VDJ Ig - Concatenated Segments index (FAI)",
+        "vdj_b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "vdj_b_consensus_annotations.json":
+          "VDJ Ig - Clonotype consensus annotations (JSON)",
+        "vdj_b_consensus.bam": "VDJ Ig - Clonotype consensus BAM",
+        "vdj_b_consensus.bam.bai": "VDJ Ig - Clonotype consensus index BAI",
+        "vdj_b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "vdj_b_consensus.fasta.fai": "VDJ Ig - Clonotype consensus index FAI",
+        "vdj_b_consensus.fastq": "VDJ Ig - Clonotype consensus FASTQ",
+        "vdj_b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "vdj_b_filtered_contig.fasta": "VDJ Ig - Filtered contig sequences FASTA",
+        "vdj_b_filtered_contig.fastq": "VDJ Ig - Filtered contig sequences FASTQ",
+        "vdj_b_metrics_summary.csv": "VDJ Ig - Summary CSV",
+        "vdj_b_vdj_contig_info.pb": "VDJ Ig - All contig info (ProtoBuf)",
+        "vdj_b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "vdj_t_airr_rearrangement.tsv": "VDJ TCR - AIRR rearrangement (TSV)",
+        "vdj_t_all_contig_annotations.bed":
+          "VDJ TCR - All contig annotations (BED)",
+        "vdj_t_all_contig_annotations.csv":
+          "VDJ TCR - All contig annotations (CSV)",
+        "vdj_t_all_contig_annotations.json":
+          "VDJ TCR - All contig annotations (JSON)",
+        "vdj_t_all_contig.bam": "VDJ TCR - Read-contig alignments (BAM)",
+        "vdj_t_all_contig.bam.bai": "VDJ TCR - Read-contig alignment index (BAI)",
+        "vdj_t_all_contig.fasta": "VDJ TCR - All-contig FASTA",
+        "vdj_t_all_contig.fasta.fai": "VDJ TCR - All-contig FASTA index (FAI)",
+        "vdj_t_all_contig.fastq": "VDJ TCR - All-contig FASTQ",
+        "vdj_t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "vdj_t_concat_ref.bam": "VDJ TCR - Concatenated Segments (BAM)",
+        "vdj_t_concat_ref.bam.bai": "VDJ TCR - Concatenated Segments index (BAI)",
+        "vdj_t_concat_ref.fasta": "VDJ TCR - Concatenated Segments (FASTA)",
+        "vdj_t_concat_ref.fasta.fai": "VDJ TCR - Concatenated Segments index (FAI)",
+        "vdj_t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "vdj_t_consensus_annotations.json":
+          "VDJ TCR - Clonotype consensus annotations (JSON)",
+        "vdj_t_consensus.bam": "VDJ TCR - Clonotype consensus BAM",
+        "vdj_t_consensus.bam.bai": "VDJ TCR - Clonotype consensus index BAI",
+        "vdj_t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "vdj_t_consensus.fasta.fai": "VDJ TCR - Clonotype consensus index FAI",
+        "vdj_t_consensus.fastq": "VDJ TCR - Clonotype consensus FASTQ",
+        "vdj_t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "vdj_t_filtered_contig.fasta": "VDJ TCR - Filtered contig sequences FASTA",
+        "vdj_t_filtered_contig.fastq": "VDJ TCR - Filtered contig sequences FASTQ",
+        "vdj_t_metrics_summary.csv": "VDJ TCR - Summary CSV",
+        "vdj_t_vdj_contig_info.pb": "VDJ TCR - All contig info (ProtoBuf)",
+        "vdj_t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+
+    vdj_combo_gex_fb: {
+      fid: ["gex_web_summary.html", "t_vdj_web_summary.html", "b_vdj_web_summary.html", "f_web_summary.html"],
+      inputs: [
+        "fastqs.tar",
+        "feature_ref.csv",
+        "library.csv",
+        "f_library.csv",
+        "t_fastqs.tar",
+        "b_fastqs.tar",
+        "f_fastqs.tar"
+      ],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam.bam.bai",
+        "molecule_info.h5",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "crispr_analysis.tar.gz",
+        "metrics_summary.csv",
+        "gex_web_summary.html",
+        "cloupe.cloupe",
+        "b_airr_rearrangement.tsv",
+        "b_all_contig_annotations.bed",
+        "b_all_contig_annotations.csv",
+        "b_all_contig_annotations.json",
+        "b_all_contig.bam",
+        "b_all_contig.bam.bai",
+        "b_all_contig.fasta",
+        "b_all_contig.fasta.fai",
+        "b_all_contig.fastq",
+        "b_clonotypes.csv",
+        "b_concat_ref.bam",
+        "b_concat_ref.bam.bai",
+        "b_concat_ref.fasta",
+        "b_concat_ref.fasta.fai",
+        "b_consensus_annotations.csv",
+        "b_consensus_annotations.json",
+        "b_consensus.bam",
+        "b_consensus.bam.bai",
+        "b_consensus.fasta",
+        "b_consensus.fasta.fai",
+        "b_consensus.fastq",
+        "b_filtered_contig_annotations.csv",
+        "b_filtered_contig.fasta",
+        "b_filtered_contig.fastq",
+        "b_metrics_summary.csv",
+        "b_vdj_contig_info.pb",
+        "b_vdj_web_summary.html",
+        "b_vloupe.vloupe",
+        "b_vdj_reference.tar.gz",
+        "t_airr_rearrangement.tsv",
+        "t_all_contig_annotations.bed",
+        "t_all_contig_annotations.csv",
+        "t_all_contig_annotations.json",
+        "t_all_contig.bam",
+        "t_all_contig.bam.bai",
+        "t_all_contig.fasta",
+        "t_all_contig.fasta.fai",
+        "t_all_contig.fastq",
+        "t_clonotypes.csv",
+        "t_concat_ref.bam",
+        "t_concat_ref.bam.bai",
+        "t_concat_ref.fasta",
+        "t_concat_ref.fasta.fai",
+        "t_consensus_annotations.csv",
+        "t_consensus_annotations.json",
+        "t_consensus.bam",
+        "t_consensus.bam.bai",
+        "t_consensus.fasta",
+        "t_consensus.fasta.fai",
+        "t_consensus.fastq",
+        "t_filtered_contig_annotations.csv",
+        "t_filtered_contig.fasta",
+        "t_filtered_contig.fastq",
+        "t_metrics_summary.csv",
+        "t_vdj_web_summary.html",
+        "t_vdj_contig_info.pb",
+        "t_vloupe.vloupe",
+        "t_vdj_reference.tar.gz",
+        "f_analysis.tar.gz",
+        "f_cloupe.cloupe",
+        "f_filtered_feature_bc_matrix.h5",
+        "f_filtered_feature_bc_matrix.tar.gz",
+        "f_metrics_summary.csv",
+        "f_molecule_info.h5",
+        "f_possorted_genome_bam.bam",
+        "f_possorted_genome_bam.bam.bai",
+        "f_raw_feature_bc_matrix.h5",
+        "f_raw_feature_bc_matrix.tar.gz",
+        "f_web_summary.html"
+      ],
+      outputdocs: "",
+      descs: {
+        "fastqs.tar": "Gene Expression - FASTQs",
+        "library.csv": "Gene Expression - Library CSV",
+        "feature_ref.csv": "Gene Expression - Feature Reference CSV",
+        "possorted_genome_bam.bam": "Gene Expression - Genome-aligned BAM",
+        "possorted_genome_bam.bam.bai":
+          "Gene Expression - Genome-aligned BAM index",
+        "molecule_info.h5": "Gene Expression - Per-molecule read information",
+        "filtered_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Gene Expression - Clustering analysis",
+        "crispr_analysis.tar.gz": "Gene Expression - CRISPR analysis",
+        "metrics_summary.csv": "Gene Expression - Summary CSV",
+        "gex_web_summary.html": "Gene Expression - Summary HTML",
+        "cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "b_fastqs.tar": "VDJ Ig - FASTQs",
+        "b_airr_rearrangement.tsv": "VDJ Ig - AIRR rearrangement (TSV)",
+        "b_all_contig_annotations.bed": "VDJ Ig - All contig annotations (BED)",
+        "b_all_contig_annotations.csv": "VDJ Ig - All contig annotations (CSV)",
+        "b_all_contig_annotations.json":
+          "VDJ Ig - All contig annotations (JSON)",
+        "b_all_contig.bam": "VDJ Ig - Read-contig alignments (BAM)",
+        "b_all_contig.bam.bai": "VDJ Ig - Read-contig alignment index (BAI)",
+        "b_all_contig.fasta": "VDJ Ig - All-contig FASTA",
+        "b_all_contig.fasta.fai": "VDJ Ig - All-contig FASTA index (FAI)",
+        "b_all_contig.fastq": "VDJ Ig - All-contig FASTQ",
+        "b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "b_concat_ref.bam": "VDJ Ig - Concatenated Segments (BAM)",
+        "b_concat_ref.bam.bai": "VDJ Ig - Concatenated Segments index (BAI)",
+        "b_concat_ref.fasta": "VDJ Ig - Concatenated Segments (FASTA)",
+        "b_concat_ref.fasta.fai": "VDJ Ig - Concatenated Segments index (FAI)",
+        "b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "b_consensus_annotations.json":
+          "VDJ Ig - Clonotype consensus annotations (JSON)",
+        "b_consensus.bam": "VDJ Ig - Clonotype consensus BAM",
+        "b_consensus.bam.bai": "VDJ Ig - Clonotype consensus index BAI",
+        "b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "b_consensus.fasta.fai": "VDJ Ig - Clonotype consensus index FAI",
+        "b_consensus.fastq": "VDJ Ig - Clonotype consensus FASTQ",
+        "b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "b_filtered_contig.fasta": "VDJ Ig - Filtered contig sequences FASTA",
+        "b_filtered_contig.fastq": "VDJ Ig - Filtered contig sequences FASTQ",
+        "b_metrics_summary.csv": "VDJ Ig - Summary CSV",
+        "b_vdj_contig_info.pb": "VDJ Ig - All contig info (ProtoBuf)",
+        "b_vdj_web_summary.html": "VDJ Ig - Summary HTML",
+        "b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "b_vdj_reference.tar.gz": "VDJ Ig - reference",
+        "t_fastqs.tar": "VDJ TCR - FASTQs",
+        "t_airr_rearrangement.tsv": "VDJ TCR - AIRR rearrangement (TSV)",
+        "t_all_contig_annotations.bed":
+          "VDJ TCR - All contig annotations (BED)",
+        "t_all_contig_annotations.csv":
+          "VDJ TCR - All contig annotations (CSV)",
+        "t_all_contig_annotations.json":
+          "VDJ TCR - All contig annotations (JSON)",
+        "t_all_contig.bam": "VDJ TCR - Read-contig alignments (BAM)",
+        "t_all_contig.bam.bai": "VDJ TCR - Read-contig alignment index (BAI)",
+        "t_all_contig.fasta": "VDJ TCR - All-contig FASTA",
+        "t_all_contig.fasta.fai": "VDJ TCR - All-contig FASTA index (FAI)",
+        "t_all_contig.fastq": "VDJ TCR - All-contig FASTQ",
+        "t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "t_concat_ref.bam": "VDJ TCR - Concatenated Segments (BAM)",
+        "t_concat_ref.bam.bai": "VDJ TCR - Concatenated Segments index (BAI)",
+        "t_concat_ref.fasta": "VDJ TCR - Concatenated Segments (FASTA)",
+        "t_concat_ref.fasta.fai": "VDJ TCR - Concatenated Segments index (FAI)",
+        "t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "t_consensus_annotations.json":
+          "VDJ TCR - Clonotype consensus annotations (JSON)",
+        "t_consensus.bam": "VDJ TCR - Clonotype consensus BAM",
+        "t_consensus.bam.bai": "VDJ TCR - Clonotype consensus index BAI",
+        "t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "t_consensus.fasta.fai": "VDJ TCR - Clonotype consensus index FAI",
+        "t_consensus.fastq": "VDJ TCR - Clonotype consensus FASTQ",
+        "t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "t_filtered_contig.fasta": "VDJ TCR - Filtered contig sequences FASTA",
+        "t_filtered_contig.fastq": "VDJ TCR - Filtered contig sequences FASTQ",
+        "t_metrics_summary.csv": "VDJ TCR - Summary CSV",
+        "t_vdj_contig_info.pb": "VDJ TCR - All contig info (ProtoBuf)",
+        "t_vdj_web_summary.html": "VDJ TCR - Summary HTML",
+        "t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file",
+        "t_vdj_reference.tar.gz": "VDJ TCR - reference",
+        "f_fastqs.tar": "Feature-only - fastqs",
+        "f_library.csv": "Feature-only - library CSV",
+        "f_analysis.tar.gz": "Feature-only - Clustering analysis",
+        "f_cloupe.cloupe": "Feature-only - Loupe Browser file",
+        "f_filtered_feature_bc_matrix.h5":
+          "Feature-only - Feature / cell matrix HDF5 (filtered)",
+        "f_filtered_feature_bc_matrix.tar.gz":
+          "Feature-only - Feature / cell matrix (filtered)",
+        "f_metrics_summary.csv": "Feature-only - Summary CSV",
+        "f_molecule_info.h5": "Feature-only - Per-molecule read information",
+        "f_possorted_genome_bam.bam": "Feature-only - Genome-aligned BAM",
+        "f_possorted_genome_bam.bam.bai":
+          "Feature-only - Genome-aligned BAM index",
+        "f_raw_feature_bc_matrix.h5":
+          "Feature-only - Feature / cell matrix HDF5 (raw)",
+        "f_raw_feature_bc_matrix.tar.gz":
+          "Feature-only - Feature / cell matrix (raw)",
+        "f_web_summary.html": "Feature-only - Summary HTML"
+      }
+    },
+    vdj_combo_gex: {
+      fid: ["gex_web_summary.html", "t_vdj_web_summary.html"],
+      inputs: [
+        "fastqs.tar",
+        "feature_ref.csv",
+        "library.csv",
+        "t_fastqs.tar",
+        "b_fastqs.tar"
+      ],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam.bam.bai",
+        "molecule_info.h5",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "crispr_analysis.tar.gz",
+        "metrics_summary.csv",
+        "gex_web_summary.html",
+        "cloupe.cloupe",
+        "b_airr_rearrangement.tsv",
+        "b_all_contig_annotations.bed",
+        "b_all_contig_annotations.csv",
+        "b_all_contig_annotations.json",
+        "b_all_contig.bam",
+        "b_all_contig.bam.bai",
+        "b_all_contig.fasta",
+        "b_all_contig.fasta.fai",
+        "b_all_contig.fastq",
+        "b_clonotypes.csv",
+        "b_concat_ref.bam",
+        "b_concat_ref.bam.bai",
+        "b_concat_ref.fasta",
+        "b_concat_ref.fasta.fai",
+        "b_consensus_annotations.csv",
+        "b_consensus_annotations.json",
+        "b_consensus.bam",
+        "b_consensus.bam.bai",
+        "b_consensus.fasta",
+        "b_consensus.fasta.fai",
+        "b_consensus.fastq",
+        "b_filtered_contig_annotations.csv",
+        "b_filtered_contig.fasta",
+        "b_filtered_contig.fastq",
+        "b_metrics_summary.csv",
+        "b_vdj_web_summary.html",
+        "b_vloupe.vloupe",
+        "t_airr_rearrangement.tsv",
+        "t_all_contig_annotations.bed",
+        "t_all_contig_annotations.csv",
+        "t_all_contig_annotations.json",
+        "t_all_contig.bam",
+        "t_all_contig.bam.bai",
+        "t_all_contig.fasta",
+        "t_all_contig.fasta.fai",
+        "t_all_contig.fastq",
+        "t_clonotypes.csv",
+        "t_concat_ref.bam",
+        "t_concat_ref.bam.bai",
+        "t_concat_ref.fasta",
+        "t_concat_ref.fasta.fai",
+        "t_consensus_annotations.csv",
+        "t_consensus_annotations.json",
+        "t_consensus.bam",
+        "t_consensus.bam.bai",
+        "t_consensus.fasta",
+        "t_consensus.fasta.fai",
+        "t_consensus.fastq",
+        "t_filtered_contig_annotations.csv",
+        "t_filtered_contig.fasta",
+        "t_filtered_contig.fastq",
+        "t_metrics_summary.csv",
+        "t_vdj_web_summary.html",
+        "t_vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "fastqs.tar": "Gene Expression - FASTQs",
+        "library.csv": "Gene Expression - Library CSV",
+        "feature_ref.csv": "Gene Expression - Feature Reference CSV",
+        "possorted_genome_bam.bam": "Gene Expression - Genome-aligned BAM",
+        "possorted_genome_bam.bam.bai":
+          "Gene Expression - Genome-aligned BAM index",
+        "molecule_info.h5": "Gene Expression - Per-molecule read information",
+        "filtered_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Gene Expression - Clustering analysis",
+        "crispr_analysis.tar.gz": "Gene Expression - CRISPR analysis",
+        "metrics_summary.csv": "Gene Expression - Summary CSV",
+        "gex_web_summary.html": "Gene Expression - Summary HTML",
+        "cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "b_fastqs.tar": "VDJ Ig - FASTQs",
+        "b_airr_rearrangement.tsv": "VDJ Ig - AIRR rearrangement (TSV)",
+        "b_all_contig_annotations.bed": "VDJ Ig - All contig annotations (BED)",
+        "b_all_contig_annotations.csv": "VDJ Ig - All contig annotations (CSV)",
+        "b_all_contig_annotations.json":
+          "VDJ Ig - All contig annotations (JSON)",
+        "b_all_contig.bam": "VDJ Ig - Read-contig alignments (BAM)",
+        "b_all_contig.bam.bai": "VDJ Ig - Read-contig alignment index (BAI)",
+        "b_all_contig.fasta": "VDJ Ig - All-contig FASTA",
+        "b_all_contig.fasta.fai": "VDJ Ig - All-contig FASTA index (FAI)",
+        "b_all_contig.fastq": "VDJ Ig - All-contig FASTQ",
+        "b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "b_concat_ref.bam": "VDJ Ig - Concatenated Segments (BAM)",
+        "b_concat_ref.bam.bai": "VDJ Ig - Concatenated Segments index (BAI)",
+        "b_concat_ref.fasta": "VDJ Ig - Concatenated Segments (FASTA)",
+        "b_concat_ref.fasta.fai": "VDJ Ig - Concatenated Segments index (FAI)",
+        "b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "b_consensus_annotations.json":
+          "VDJ Ig - Clonotype consensus annotations (JSON)",
+        "b_consensus.bam": "VDJ Ig - Clonotype consensus BAM",
+        "b_consensus.bam.bai": "VDJ Ig - Clonotype consensus index BAI",
+        "b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "b_consensus.fasta.fai": "VDJ Ig - Clonotype consensus index FAI",
+        "b_consensus.fastq": "VDJ Ig - Clonotype consensus FASTQ",
+        "b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "b_filtered_contig.fasta": "VDJ Ig - Filtered contig sequences FASTA",
+        "b_filtered_contig.fastq": "VDJ Ig - Filtered contig sequences FASTQ",
+        "b_metrics_summary.csv": "VDJ Ig - Summary CSV",
+        "b_vdj_web_summary.html": "VDJ Ig - Summary HTML",
+        "b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "t_fastqs.tar": "VDJ TCR - FASTQs",
+        "t_airr_rearrangement.tsv": "VDJ TCR - AIRR rearrangement (TSV)",
+        "t_all_contig_annotations.bed":
+          "VDJ TCR - All contig annotations (BED)",
+        "t_all_contig_annotations.csv":
+          "VDJ TCR - All contig annotations (CSV)",
+        "t_all_contig_annotations.json":
+          "VDJ TCR - All contig annotations (JSON)",
+        "t_all_contig.bam": "VDJ TCR - Read-contig alignments (BAM)",
+        "t_all_contig.bam.bai": "VDJ TCR - Read-contig alignment index (BAI)",
+        "t_all_contig.fasta": "VDJ TCR - All-contig FASTA",
+        "t_all_contig.fasta.fai": "VDJ TCR - All-contig FASTA index (FAI)",
+        "t_all_contig.fastq": "VDJ TCR - All-contig FASTQ",
+        "t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "t_concat_ref.bam": "VDJ TCR - Concatenated Segments (BAM)",
+        "t_concat_ref.bam.bai": "VDJ TCR - Concatenated Segments index (BAI)",
+        "t_concat_ref.fasta": "VDJ TCR - Concatenated Segments (FASTA)",
+        "t_concat_ref.fasta.fai": "VDJ TCR - Concatenated Segments index (FAI)",
+        "t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "t_consensus_annotations.json":
+          "VDJ TCR - Clonotype consensus annotations (JSON)",
+        "t_consensus.bam": "VDJ TCR - Clonotype consensus BAM",
+        "t_consensus.bam.bai": "VDJ TCR - Clonotype consensus index BAI",
+        "t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "t_consensus.fasta.fai": "VDJ TCR - Clonotype consensus index FAI",
+        "t_consensus.fastq": "VDJ TCR - Clonotype consensus FASTQ",
+        "t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "t_filtered_contig.fasta": "VDJ TCR - Filtered contig sequences FASTA",
+        "t_filtered_contig.fastq": "VDJ TCR - Filtered contig sequences FASTQ",
+        "t_metrics_summary.csv": "VDJ TCR - Summary CSV",
+        "t_vdj_web_summary.html": "VDJ TCR - Summary HTML",
+        "t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+    vdj_combo: {
+      fid: ["b_vdj_web_summary.html", "t_vdj_web_summary.html"],
+      inputs: ["t_fastqs.tar", "b_fastqs.tar"],
+      outputs: [
+        "b_airr_rearrangement.tsv",
+        "b_all_contig_annotations.bed",
+        "b_all_contig_annotations.csv",
+        "b_all_contig_annotations.json",
+        "b_all_contig.bam",
+        "b_all_contig.bam.bai",
+        "b_all_contig.fasta",
+        "b_all_contig.fasta.fai",
+        "b_all_contig.fastq",
+        "b_clonotypes.csv",
+        "b_concat_ref.bam",
+        "b_concat_ref.bam.bai",
+        "b_concat_ref.fasta",
+        "b_concat_ref.fasta.fai",
+        "b_consensus_annotations.csv",
+        "b_consensus_annotations.json",
+        "b_consensus.bam",
+        "b_consensus.bam.bai",
+        "b_consensus.fasta",
+        "b_consensus.fasta.fai",
+        "b_consensus.fastq",
+        "b_filtered_contig_annotations.csv",
+        "b_filtered_contig.fasta",
+        "b_filtered_contig.fastq",
+        "b_metrics_summary.csv",
+        "b_vdj_web_summary.html",
+        "b_vloupe.vloupe",
+        "t_airr_rearrangement.tsv",
+        "t_all_contig_annotations.bed",
+        "t_all_contig_annotations.csv",
+        "t_all_contig_annotations.json",
+        "t_all_contig.bam",
+        "t_all_contig.bam.bai",
+        "t_all_contig.fasta",
+        "t_all_contig.fasta.fai",
+        "t_all_contig.fastq",
+        "t_clonotypes.csv",
+        "t_concat_ref.bam",
+        "t_concat_ref.bam.bai",
+        "t_concat_ref.fasta",
+        "t_concat_ref.fasta.fai",
+        "t_consensus_annotations.csv",
+        "t_consensus_annotations.json",
+        "t_consensus.bam",
+        "t_consensus.bam.bai",
+        "t_consensus.fasta",
+        "t_consensus.fasta.fai",
+        "t_consensus.fastq",
+        "t_filtered_contig_annotations.csv",
+        "t_filtered_contig.fasta",
+        "t_filtered_contig.fastq",
+        "t_metrics_summary.csv",
+        "t_vdj_web_summary.html",
+        "t_vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "b_fastqs.tar": "VDJ Ig - FASTQs",
+        "b_airr_rearrangement.tsv": "VDJ Ig - AIRR rearrangement (TSV)",
+        "b_all_contig_annotations.bed": "VDJ Ig - All contig annotations (BED)",
+        "b_all_contig_annotations.csv": "VDJ Ig - All contig annotations (CSV)",
+        "b_all_contig_annotations.json":
+          "VDJ Ig - All contig annotations (JSON)",
+        "b_all_contig.bam": "VDJ Ig - Read-contig alignments (BAM)",
+        "b_all_contig.bam.bai": "VDJ Ig - Read-contig alignment index (BAI)",
+        "b_all_contig.fasta": "VDJ Ig - All-contig FASTA",
+        "b_all_contig.fasta.fai": "VDJ Ig - All-contig FASTA index (FAI)",
+        "b_all_contig.fastq": "VDJ Ig - All-contig FASTQ",
+        "b_clonotypes.csv": "VDJ Ig - Clonotype info (CSV)",
+        "b_concat_ref.bam": "VDJ Ig - Concatenated Segments (BAM)",
+        "b_concat_ref.bam.bai": "VDJ Ig - Concatenated Segments index (BAI)",
+        "b_concat_ref.fasta": "VDJ Ig - Concatenated Segments (FASTA)",
+        "b_concat_ref.fasta.fai": "VDJ Ig - Concatenated Segments index (FAI)",
+        "b_consensus_annotations.csv":
+          "VDJ Ig - Clonotype consensus annotations (CSV)",
+        "b_consensus_annotations.json":
+          "VDJ Ig - Clonotype consensus annotations (JSON)",
+        "b_consensus.bam": "VDJ Ig - Clonotype consensus BAM",
+        "b_consensus.bam.bai": "VDJ Ig - Clonotype consensus index BAI",
+        "b_consensus.fasta": "VDJ Ig - Clonotype consensus FASTA",
+        "b_consensus.fasta.fai": "VDJ Ig - Clonotype consensus index FAI",
+        "b_consensus.fastq": "VDJ Ig - Clonotype consensus FASTQ",
+        "b_filtered_contig_annotations.csv":
+          "VDJ Ig - Filtered contig annotations (CSV)",
+        "b_filtered_contig.fasta": "VDJ Ig - Filtered contig sequences FASTA",
+        "b_filtered_contig.fastq": "VDJ Ig - Filtered contig sequences FASTQ",
+        "b_metrics_summary.csv": "VDJ Ig - Summary CSV",
+        "b_vdj_web_summary.html": "VDJ Ig - Summary HTML",
+        "b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "t_fastqs.tar": "VDJ TCR - FASTQs",
+        "t_airr_rearrangement.tsv": "VDJ TCR - AIRR rearrangement (TSV)",
+        "t_all_contig_annotations.bed":
+          "VDJ TCR - All contig annotations (BED)",
+        "t_all_contig_annotations.csv":
+          "VDJ TCR - All contig annotations (CSV)",
+        "t_all_contig_annotations.json":
+          "VDJ TCR - All contig annotations (JSON)",
+        "t_all_contig.bam": "VDJ TCR - Read-contig alignments (BAM)",
+        "t_all_contig.bam.bai": "VDJ TCR - Read-contig alignment index (BAI)",
+        "t_all_contig.fasta": "VDJ TCR - All-contig FASTA",
+        "t_all_contig.fasta.fai": "VDJ TCR - All-contig FASTA index (FAI)",
+        "t_all_contig.fastq": "VDJ TCR - All-contig FASTQ",
+        "t_clonotypes.csv": "VDJ TCR - Clonotype info (CSV)",
+        "t_concat_ref.bam": "VDJ TCR - Concatenated Segments (BAM)",
+        "t_concat_ref.bam.bai": "VDJ TCR - Concatenated Segments index (BAI)",
+        "t_concat_ref.fasta": "VDJ TCR - Concatenated Segments (FASTA)",
+        "t_concat_ref.fasta.fai": "VDJ TCR - Concatenated Segments index (FAI)",
+        "t_consensus_annotations.csv":
+          "VDJ TCR - Clonotype consensus annotations (CSV)",
+        "t_consensus_annotations.json":
+          "VDJ TCR - Clonotype consensus annotations (JSON)",
+        "t_consensus.bam": "VDJ TCR - Clonotype consensus BAM",
+        "t_consensus.bam.bai": "VDJ TCR - Clonotype consensus index BAI",
+        "t_consensus.fasta": "VDJ TCR - Clonotype consensus FASTA",
+        "t_consensus.fasta.fai": "VDJ TCR - Clonotype consensus index FAI",
+        "t_consensus.fastq": "VDJ TCR - Clonotype consensus FASTQ",
+        "t_filtered_contig_annotations.csv":
+          "VDJ TCR - Filtered contig annotations (CSV)",
+        "t_filtered_contig.fasta": "VDJ TCR - Filtered contig sequences FASTA",
+        "t_filtered_contig.fastq": "VDJ TCR - Filtered contig sequences FASTQ",
+        "t_metrics_summary.csv": "VDJ TCR - Summary CSV",
+        "t_vdj_web_summary.html": "VDJ TCR - Summary HTML",
+        "t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+    spaceranger: {
+      fid: ["spatial.tar.gz"],
+      inputs: ["fastqs.tar", "image.tif", "image.jpg", "alignment_file.json", "target_panel.csv", "probe_set.csv"],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam.bam.bai",
+        "molecule_info.h5",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "spatial.tar.gz",
+        "spatial_enrichment.csv",
+        "metrics_summary.csv",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs:
+        "/spatial-gene-expression/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "image.tif": "Image (TIFF)",
+        "image.jpg": "Image (JPG)",
+        "target_panel.csv": "Target Panel",
+        "probe_set.csv": "Probe Set",
+        "alignment_file.json": "Manual alignment file",
+        "possorted_genome_bam.bam": "Genome-aligned BAM",
+        "possorted_genome_bam.bam.bai": "Genome-aligned BAM index",
+        "molecule_info.h5": "Per-molecule read information",
+        "filtered_feature_bc_matrix.h5":
+          "Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz": "Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5": "Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz": "Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Clustering analysis",
+        "spatial.tar.gz": "Spatial imaging data",
+        "spatial_enrichment.csv": "Spatial Enrichment (Moran's I)",
+        "metrics_summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger_arc: {
+      fid: ["atac_fragments.tsv.gz", "gex_molecule_info.h5"],
+      inputs: ["fastqs.tar", "library.csv"],
+      outputs: [
+        "cloupe.cloupe",
+        "analysis.tar.gz",
+        "web_summary.html",
+        "summary.csv",
+        "per_barcode_metrics.csv",
+        "filtered_feature_bc_matrix.tar.gz",
+        "filtered_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "gex_possorted_bam.bam",
+        "gex_possorted_bam.bam.bai",
+        "gex_molecule_info.h5",
+        "atac_possorted_bam.bam",
+        "atac_possorted_bam.bam.bai",
+        "atac_fragments.tsv.gz",
+        "atac_fragments.tsv.gz.tbi",
+        "atac_peaks.bed",
+        "atac_cut_sites.bigwig",
+        "atac_peak_annotation.tsv"
+      ],
+      outputdocs: "/single-cell-atac/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "Sequencing data (FASTQ)",
+        "library.csv": "Library (CSV)",
+        "cloupe.cloupe": "Loupe Browser visualization file (CLOUPE)",
+        "analysis.tar.gz": "Secondary analysis outputs (DIR)",
+        "web_summary.html": "Run summary (HTML)",
+        "summary.csv": "Run summary metrics (CSV)",
+        "per_barcode_metrics.csv": "Per barcode summary metrics (CSV)",
+        "filtered_feature_bc_matrix.tar.gz": "Filtered feature barcode matrix MEX (DIR)",
+        "filtered_feature_bc_matrix.h5": "Filtered feature barcode matrix (HDF5)",
+        "raw_feature_bc_matrix.tar.gz": "Raw feature barcode matrix MEX (DIR)",
+        "raw_feature_bc_matrix.h5": "Raw feature barcode matrix (HDF5)",
+        "gex_possorted_bam.bam": "GEX Position-sorted alignments (BAM)",
+        "gex_possorted_bam.bam.bai": "GEX Position-sorted alignments (BAM index)",
+        "gex_molecule_info.h5": "GEX Per molecule information file (HDF5)",
+        "atac_possorted_bam.bam": "ATAC Position-sorted alignments (BAM)",
+        "atac_possorted_bam.bam.bai": "ATAC Position-sorted alignments (BAM index)",
+        "atac_fragments.tsv.gz": "ATAC Per fragment information file (TSV.GZ)",
+        "atac_fragments.tsv.gz.tbi": "ATAC Per fragment information index (TSV.GZ index)",
+        "atac_peaks.bed": "ATAC peak locations (BED)",
+        "atac_cut_sites.bigwig": "ATAC smoothed transposition site track (BIGWIG)",
+        "atac_peak_annotation.tsv": "ATAC peak annotations based on proximal genes (TSV)"
+      }
+    },
+    cellranger_3_aggr: {
+      fid: ["raw_feature_bc_matrix.tar.gz", "summary.json"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "summary.json",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "filtered_feature_bc_matrix.h5":
+          "Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz": "Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5": "Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz": "Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Clustering analysis",
+        "summary.json": "Summary JSON",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger_4_plus_tc: {
+      fid: ["raw_feature_bc_matrix.tar.gz", "tc_barcode_summary.csv"],
+      inputs: [
+        "fastqs.tar",
+        "feature_ref.csv",
+        "library.csv",
+        "target_panel.csv"
+      ],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam.bam.bai",
+        "molecule_info.h5",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "crispr_analysis.tar.gz",
+        "metrics_summary.csv",
+        "web_summary.html",
+        "cloupe.cloupe",
+        "tc_barcode_summary.csv",
+        "tc_feature_summary.csv",
+        "tc_metrics_summary.csv",
+        "tc_web_summary.html"
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "library.csv": "Library CSV",
+        "feature_ref.csv": "Feature Reference CSV",
+        "target_panel.csv": "Target Panel",
+        "possorted_genome_bam.bam": "Genome-aligned BAM",
+        "possorted_genome_bam.bam.bai": "Genome-aligned BAM index",
+        "molecule_info.h5": "Per-molecule read information",
+        "filtered_feature_bc_matrix.h5":
+          "Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz": "Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5": "Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz": "Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Clustering analysis",
+        "crispr_analysis.tar.gz": "CRISPR analysis",
+        "metrics_summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file",
+        "tc_barcode_summary.csv": "Targeted Compare - Barcode Summary CSV",
+        "tc_feature_summary.csv": "Targeted Compare - Feature Summary CSV",
+        "tc_metrics_summary.csv": "Targeted Compare - Summary CSV",
+        "tc_web_summary.html": "Targeted Compare - Summary HTML"
+      }
+    },
+    cellranger_3: {
+      fid: ["raw_feature_bc_matrix.tar.gz"],
+      inputs: [
+        "fastqs.tar",
+        "feature_ref.csv",
+        "library.csv",
+        "target_panel.csv"
+      ],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam.bam.bai",
+        "molecule_info.h5",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "raw_feature_bc_matrix.h5",
+        "raw_feature_bc_matrix.tar.gz",
+        "analysis.tar.gz",
+        "crispr_analysis.tar.gz",
+        "metrics_summary.csv",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "library.csv": "Library CSV",
+        "feature_ref.csv": "Feature Reference CSV",
+        "target_panel.csv": "Target Panel",
+        "possorted_genome_bam.bam": "Genome-aligned BAM",
+        "possorted_genome_bam.bam.bai": "Genome-aligned BAM index",
+        "molecule_info.h5": "Per-molecule read information",
+        "filtered_feature_bc_matrix.h5":
+          "Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz": "Feature / cell matrix (filtered)",
+        "raw_feature_bc_matrix.h5": "Feature / cell matrix HDF5 (raw)",
+        "raw_feature_bc_matrix.tar.gz": "Feature / cell matrix (raw)",
+        "analysis.tar.gz": "Clustering analysis",
+        "crispr_analysis.tar.gz": "CRISPR analysis",
+        "metrics_summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger: {
+      fid: ["raw_gene_bc_matrices.tar.gz"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "possorted_genome_bam.bam",
+        "possorted_genome_bam_index.bam.bai",
+        "molecule_info.h5",
+        "filtered_gene_bc_matrices_h5.h5",
+        "filtered_gene_bc_matrices.tar.gz",
+        "raw_gene_bc_matrices_h5.h5",
+        "raw_gene_bc_matrices.tar.gz",
+        "analysis.tar.gz",
+        "gem_classification.csv",
+        "metrics_summary.csv",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "possorted_genome_bam.bam": "Genome-aligned BAM",
+        "possorted_genome_bam_index.bam.bai": "Genome-aligned BAM index",
+        "molecule_info.h5": "Per-molecule read information",
+        "filtered_gene_bc_matrices_h5.h5": "Gene / cell matrix HDF5 (filtered)",
+        "filtered_gene_bc_matrices.tar.gz": "Gene / cell matrix (filtered)",
+        "raw_gene_bc_matrices_h5.h5": "Gene / cell matrix HDF5 (raw)",
+        "raw_gene_bc_matrices.tar.gz": "Gene / cell matrix (raw)",
+        "analysis.tar.gz": "Clustering analysis",
+        "gem_classification.csv": "Clustering analysis",
+        "metrics_summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger_aggr: {
+      fid: ["aggregation_csv.csv"],
+      inputs: ["fastqs.tar", "aggregation_csv.csv"],
+      outputs: [
+        "analysis.tar.gz",
+        "filtered_gene_bc_matrices_h5.h5",
+        "filtered_gene_bc_matrices_mex.tar.gz",
+        "filtered_molecules.h5",
+        "raw_gene_bc_matrices_h5.h5",
+        "raw_gene_bc_matrices_mex.tar.gz",
+        "raw_molecules.h5",
+        "summary.json",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "aggregation_csv.csv": "Input CSV file",
+        "analysis.tar.gz": "Clustering analysis",
+        "filtered_gene_bc_matrices_h5.h5": "Gene / cell matrix HDF5 (filtered)",
+        "filtered_gene_bc_matrices_mex.tar.gz": "Gene / cell matrix (filtered)",
+        "filtered_molecules.h5": "Per-molecule read information (filtered)",
+        "raw_gene_bc_matrices_h5.h5": "Gene / cell matrix HDF5 (raw)",
+        "raw_gene_bc_matrices_mex.tar.gz": "Gene / cell matrix (raw)",
+        "raw_molecules.h5": "Per-molecule read information (raw)",
+        "summary.json": "Summary JSON",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger_vdj: {
+      fid: ["vloupe.vloupe", "web_summary.html"],
+      inputs: ["fastqs.tar", "vdj_reference.tar.gz"],
+      outputs: [
+        "airr_rearrangement.tsv",
+        "all_contig_annotations.bed",
+        "all_contig_annotations.csv",
+        "all_contig_annotations.json",
+        "all_contig.bam",
+        "all_contig.bam.bai",
+        "all_contig.fasta",
+        "all_contig.fasta.fai",
+        "all_contig.fastq",
+        "clonotypes.csv",
+        "concat_ref.bam",
+        "concat_ref.bam.bai",
+        "concat_ref.fasta",
+        "concat_ref.fasta.fai",
+        "consensus_annotations.csv",
+        "consensus_annotations.json",
+        "consensus.bam",
+        "consensus.bam.bai",
+        "consensus.fasta",
+        "consensus.fasta.fai",
+        "consensus.fastq",
+        "filtered_contig_annotations.csv",
+        "filtered_contig.fasta",
+        "filtered_contig.fastq",
+        "metrics_summary.csv",
+        "vdj_contig_info.pb",
+        "web_summary.html",
+        "vloupe.vloupe"
+      ],
+      outputdocs: "/single-cell-vdj/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "vdj_reference.tar.gz": "VDJ reference",
+        "airr_rearrangement.tsv": "AIRR rearrangement (TSV)",
+        "all_contig_annotations.bed": "All contig annotations (BED)",
+        "all_contig_annotations.csv": "All contig annotations (CSV)",
+        "all_contig_annotations.json": "All contig annotations (JSON)",
+        "all_contig.bam": "Read-contig alignments (BAM)",
+        "all_contig.bam.bai": "Read-contig alignment index (BAI)",
+        "all_contig.fasta": "All-contig FASTA",
+        "all_contig.fasta.fai": "All-contig FASTA index (FAI)",
+        "all_contig.fastq": "All-contig FASTQ",
+        "clonotypes.csv": "Clonotype info (CSV)",
+        "concat_ref.bam": "Concatenated Segments (BAM)",
+        "concat_ref.bam.bai": "Concatenated Segments index (BAI)",
+        "concat_ref.fasta": "Concatenated Segments (FASTA)",
+        "concat_ref.fasta.fai": "Concatenated Segments index (FAI)",
+        "consensus_annotations.csv": "Clonotype consensus annotations (CSV)",
+        "consensus_annotations.json": "Clonotype consensus annotations (JSON)",
+        "consensus.bam": "Clonotype consensus BAM",
+        "consensus.bam.bai": "Clonotype consensus index BAI",
+        "consensus.fasta": "Clonotype consensus FASTA",
+        "consensus.fasta.fai": "Clonotype consensus index FAI",
+        "consensus.fastq": "Clonotype consensus FASTQ",
+        "filtered_contig_annotations.csv": "Filtered contig annotations (CSV)",
+        "filtered_contig.fasta": "Filtered contig sequences FASTA",
+        "filtered_contig.fastq": "Filtered contig sequences FASTQ",
+        "metrics_summary.csv": "Summary CSV",
+        "vdj_contig_info.pb": "All contig info (ProtoBuf)",
+        "web_summary.html": "Summary HTML",
+        "vloupe.vloupe": "Loupe V(D)J Browser file"
+      }
+    },
+    cellranger_targeted_compare: {
+      fid: ["barcode_summary.csv"],
+      inputs: [],
+      outputs: [
+        "barcode_summary.csv",
+        "feature_summary.csv",
+        "metrics_summary.csv",
+        "web_summary.html"
+      ],
+      outputdocs: "",
+      descs: {
+        "barcode_summary.csv": "Barcode Summary CSV",
+        "feature_summary.csv": "Feature Summary CSV",
+        "metrics_summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML"
+      }
+    },
+    cellranger_dna: {
+      fid: ["mappable_regions.bed"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "alarms_summary.txt",
+        "cnv_data.h5",
+        "mappable_regions.bed",
+        "node_cnv_calls.bed",
+        "node_unmerged_cnv_calls.bed",
+        "per_cell_summary_metrics.csv",
+        "possorted_bam.bam",
+        "possorted_bam.bam.bai",
+        "summary.csv",
+        "web_summary.html",
+        "dloupe.dloupe"
+      ],
+      outputdocs: "/single-cell-dna/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "alarms_summary.txt": "Alarms (TXT)",
+        "cnv_data.h5": "CNV data (HDF5)",
+        "mappable_regions.bed": "Mappable regions (BED)",
+        "node_cnv_calls.bed": "CNV calls (BED)",
+        "node_unmerged_cnv_calls.bed": "Unmerged CNV calls (BED)",
+        "per_cell_summary_metrics.csv": "Per-cell summary metrics (CSV)",
+        "possorted_bam.bam": "Position-sorted alignments (BAM)",
+        "possorted_bam.bam.bai": "Position-sorted alignments index (BAI)",
+        "summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "dloupe.dloupe": "Loupe scDNA Browser file"
+      }
+    },
+    cellranger_dna_aggr: {
+      fid: ["aggregate.csv"],
+      inputs: ["aggregate.csv"],
+      outputs: [
+        "aggregate.csv",
+        "alarms_summary.txt",
+        "cnv_data.h5",
+        "node_cnv_calls.bed",
+        "node_unmerged_cnv_calls.bed",
+        "per_cell_summary_metrics.csv",
+        "summary.csv",
+        "web_summary.html",
+        "dloupe.dloupe"
+      ],
+      outputdocs: "/single-cell-dna/software/pipelines/latest/output/overview",
+      descs: {
+        "aggregate.csv": "Inputs (CSV)",
+        "alarms_summary.txt": "Alarms (TXT)",
+        "cnv_data.h5": "CNV data (HDF5)",
+        "node_cnv_calls.bed": "CNV calls (BED)",
+        "node_unmerged_cnv_calls.bed": "Unmerged CNV calls (BED)",
+        "per_cell_summary_metrics.csv": "Per-cell summary metrics (CSV)",
+        "summary.csv": "Summary CSV",
+        "web_summary.html": "Summary HTML",
+        "dloupe.dloupe": "Loupe scDNA Browser file"
+      }
+    },
+    cellranger_atac: {
+      fid: ["peaks.bed"],
+      inputs: ["fastqs.tar"],
+      outputs: [
+        "analysis.tar.gz",
+        "filtered_peak_bc_matrix.tar.gz",
+        "filtered_peak_bc_matrix.h5",
+        "filtered_tf_bc_matrix.tar.gz",
+        "filtered_tf_bc_matrix.h5",
+        "fragments.tsv.gz",
+        "fragments.tsv.gz.tbi",
+        "peak_annotation.tsv",
+        "peak_motif_mapping.bed",
+        "peaks.bed",
+        "possorted_bam.bam",
+        "possorted_bam.bam.bai",
+        "raw_peak_bc_matrix.tar.gz",
+        "raw_peak_bc_matrix.h5",
+        "singlecell.csv",
+        "summary.csv",
+        "summary.json",
+        "web_summary.html",
+        "cloupe.cloupe"
+      ],
+      outputdocs: "/single-cell-atac/software/pipelines/latest/output/overview",
+      descs: {
+        "fastqs.tar": "FASTQs",
+        "analysis.tar.gz": "Clustering analysis",
+        "filtered_peak_bc_matrix.tar.gz": "Peak by cell matrix (filtered)",
+        "filtered_peak_bc_matrix.h5": "Peak by cell matrix HDF5 (filtered)",
+        "filtered_tf_bc_matrix.tar.gz":
+          "Transcription Factor by cell matrix (filtered)",
+        "filtered_tf_bc_matrix.h5":
+          "Transcription Factor by cell matrix HDF5 (filtered)",
+        "fragments.tsv.gz": "Fragments (TSV)",
+        "fragments.tsv.gz.tbi": "Fragments index (TBI)",
+        "peak_annotation.tsv": "Peak annotation (CSV)",
+        "peak_motif_mapping.bed": "Peak-motif associations (BED)",
+        "peaks.bed": "Peaks (BED)",
+        "possorted_bam.bam": "Position-sorted alignments (BAM)",
+        "possorted_bam.bam.bai": "Position-sorted alignments index (BAI)",
+        "raw_peak_bc_matrix.tar.gz": "Peak by cell matrix (raw)",
+        "raw_peak_bc_matrix.h5": "Peak by cell matrix HDF5 (raw)",
+        "singlecell.csv": "Per Barcode metrics (CSV)",
+        "summary.csv": "Summary Metrics CSV",
+        "summary.json": "Summary Metrics JSON",
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    megacell_130: {
+      fid: ["neuron20k.h5", "aggr_web_summary.html"],
+      inputs: [],
+      outputs: [
+        "filtered_gene_bc_matrices_h5.h5",
+        "aggr_web_summary.html",
+        "reanalyze.csv",
+        "analysis.tar.gz",
+        "web_summary.html",
+        "cloupe.cloupe",
+        "neuron20k.h5"
+      ],
+      outputdocs: "",
+      descs: {
+        "filtered_gene_bc_matrices_h5.h5":
+          "aggr - Gene / cell matrix HDF5 (filtered)",
+        "aggr_web_summary.html": "aggr - Summary HTML",
+        "reanalyze.csv": "reanalyze - Input CSV file",
+        "analysis.tar.gz": "reanalyze - Clustering analysis",
+        "web_summary.html": "reanalyze - Summary HTML",
+        "cloupe.cloupe": "reanalyze - Loupe Browser file",
+        "neuron20k.h5": "matrix of sampled 20k cells"
+      }
+    },
+    megacell: {
+      fid: ["neuron20k.h5"],
+      inputs: [],
+      outputs: [
+        "filtered_gene_bc_matrices_h5.h5",
+        "web_summary.html",
+        "reanalyze.csv",
+        "analysis.tar.gz",
+        "neuron20k.h5"
+      ],
+      outputdocs: "",
+      descs: {
+        "filtered_gene_bc_matrices_h5.h5":
+          "aggr - Gene / cell matrix HDF5 (filtered)",
+        "web_summary.html": "aggr - Summary HTML",
+        "reanalyze.csv": "reanalyze - Input CSV file",
+        "analysis.tar.gz": "reanalyze - Clustering analysis",
+        "neuron20k.h5": "matrix of sampled 20k cells"
+      }
+    },
+    agbt_2019: {
+      fid: ["binarized_matrix.csv"],
+      inputs: [],
+      outputs: [
+        "binarized_matrix.csv",
+        "filtered_feature_bc_matrix.h5",
+        "filtered_feature_bc_matrix.tar.gz",
+        "gex_web_summary.html",
+        "cloupe.cloupe",
+        "all_contig_annotations.csv",
+        "all_contig_annotations.json",
+        "clonotypes.csv",
+        "consensus_annotations.csv",
+        "consensus_annotations.json",
+        "vdj_web_summary.html",
+        "vloupe.vloupe"
+      ],
+      outputdocs: "",
+      descs: {
+        "binarized_matrix.csv": "binarized matrix CSV",
+        "filtered_feature_bc_matrix.h5":
+          "Gene Expression - Feature / cell matrix HDF5 (filtered)",
+        "filtered_feature_bc_matrix.tar.gz":
+          "Gene Expression - Feature / cell matrix (filtered)",
+        "gex_web_summary.html": "Gene Expression - Summary HTML",
+        "cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "all_contig_annotations.csv": "VDJ - All contig annotations (CSV)",
+        "all_contig_annotations.json": "VDJ - All contig annotations (JSON)",
+        "clonotypes.csv": "VDJ - Clonotype info (CSV)",
+        "consensus_annotations.csv":
+          "VDJ - Clonotype consensus annotations (CSV)",
+        "consensus_annotations.json":
+          "VDJ - Clonotype consensus annotations (JSON)",
+        "vdj_web_summary.html": "VDJ - Summary HTML",
+        "vloupe.vloupe": "VDJ - Loupe V(D)J Browser file"
+      }
+    },
+    cellranger_gex_generic: {
+      fid: ["web_summary.html", "cloupe.cloupe"],
+      inputs: [],
+      outputs: ["web_summary.html", "cloupe.cloupe"],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "web_summary.html": "Summary HTML",
+        "cloupe.cloupe": "Loupe Browser file"
+      }
+    },
+    cellranger_multi_minimal: {
+      fid: ["web_summary.html", "count_cloupe.cloupe"],
+      inputs: [],
+      outputs: [
+        "web_summary.html",
+        "count_cloupe.cloupe",
+        "vdj_b_vloupe.vloupe",
+        "vdj_t_vloupe.vloupe",
+      ],
+      outputdocs: "/single-cell/software/pipelines/latest/output/overview",
+      descs: {
+        "web_summary.html": "Summary HTML",
+        "count_cloupe.cloupe": "Gene Expression - Loupe Browser file",
+        "vdj_b_vloupe.vloupe": "VDJ Ig - Loupe V(D)J Browser file",
+        "vdj_t_vloupe.vloupe": "VDJ TCR - Loupe V(D)J Browser file"
+      }
+    },
+    generic: {
+      fid: "phased_possorted_bam.bam",
+      inputs: [],
+      outputs: [
+        "phased_possorted_bam.bam",
+        "phased_possorted_bam_index.bam.bai",
+        "phased_variants.vcf.gz",
+        "phased_variants_index.vcf.gz.tbi"
+      ],
+      outputdocs: "/genome-exome/software/pipelines/latest/output/overview",
+      descs: {
+        "phased_possorted_bam.bam": "Phased, barcoded, sorted BAM",
+        "phased_possorted_bam_index.bam.bai":
+          "Phased, barcoded, sorted BAM index",
+        "phased_variants.vcf.gz": "Phased variant calls",
+        "phased_variants_index.vcf.gz.tbi": "Phased variant calls index"
+      }
+    }
+  };
+
+  loupedemos = [
+    "NA12878_WGS_v2",
+    "HCC1954T_WGS_210",
+    "HCC1954N_WGS_210",
+    "NA12878_WES_v2",
+    "HCC1954T_WES_210",
+    "HCC1954N_WES_210"
+  ];
+
+  loupedemoversions = ["2.2.1", "2.1.0", "2.1.0", "2.2.1", "2.1.0", "2.1.0"];
+
+  var s3httpsprefix = "https://" + s3host + "/" + s3filesbucket;
+  var s3prefix = "s3://" + s3filesbucket + "/";
+  var MAX_CF_BYTES = 20000000000; // CloudFront only supports caching of files up to 20GB
+
+  app.controller("MiramarCtrl", function ($scope, $compile, $sanitize) {
+    var contents, file, i, k, len, namelist, namemap, ref, ref1, v;
+    contents = tenx_files[pubname];
+    namemap = {};
+    namelist = _.map(contents.files, function (file) {
+      var namekey;
+      namekey = file.fname.substring(contents.pubname.length + 1);
+      namemap[namekey] = file;
+      return namekey;
+    });
+    for (k in defs) {
+      v = defs[k];
+      //      if (((ref = v.fid), indexOf.call(namelist, ref) >= 0)) {
+      if (((ref = v.fid), ref.every(val => namelist.includes(val)))) {
+        $scope.def = v;
+        $scope.dname = k;
+        break;
+      }
+    }
+    $scope.inputs = _.filter(
+      _.map($scope.def.inputs, function (name) {
+        var file;
+        file = namemap[name];
+        if (file != null) {
+          file.desc = $scope.def.descs[name];
+          if (file.bytes < MAX_CF_BYTES) {
+            file.url = file.url.replace(s3httpsprefix, s3filesurl);
+          } else {
+            file.url = file.url.replace(s3httpsprefix, s3largefilesurl);
+          }
+        }
+        return file;
+      })
+    );
+    $scope.outputs = _.filter(
+      _.map($scope.def.outputs, function (name) {
+        var file;
+        file = namemap[name];
+        if (file != null) {
+          file.desc = $scope.def.descs[name];
+          if (file.bytes < MAX_CF_BYTES) {
+            file.url = file.url.replace(s3httpsprefix, s3filesurl);
+          } else {
+            file.url = file.url.replace(s3httpsprefix, s3largefilesurl);
+          }
+        }
+        return file;
+      })
+    );
+    $scope.outputdocs = $scope.def.outputdocs;
+    ref1 = contents.files;
+    for (i = 0, len = ref1.length; i < len; i++) {
+      file = ref1[i];
+      file.size = Humanize.fileSize(file.bytes);
+    }
+    $scope.loupedemo =
+      indexOf.call(loupedemos, pubname) >= 0 &&
+      loupedemoversions[indexOf.call(loupedemos, pubname)] == pubversion;
+    return ($scope.contents = contents);
+  });
+
+  return defs
+}.call(this));

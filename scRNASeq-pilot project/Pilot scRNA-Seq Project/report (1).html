@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><meta charset="UTF-8">
+<title>PDF</title>
+<link href="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/css/report_pdf.css" rel="stylesheet" type="text/css" />
+<link href="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/fancybox/jquery.fancybox-1.3.4.css" rel="stylesheet" type="text/css" />
+<script src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/jquery-1.5.2.min.js" language="javascript"></script>
+<script src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/jquery.albumSlider.min.js" type="text/javascript"></script>
+<script src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/fancybox/jquery.mousewheel-3.0.4.pack.js" type="text/javascript"></script>
+<script src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/fancybox/jquery.fancybox-1.3.4.pack.js" type="text/javascript"></script>
+<script src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/albumSider.js" type="text/javascript"></script>
+<script type="text/javascript" src="/ifshk7/BC_PS/linhong/pipeline/RawReport/template2.0/js/overlib.js"></script>
+<script type="text/javascript">
+$(function () {
+	$(".download").each(function () {
+		var width = $(this).parent().next(".table-container").children("table").width();
+		var floatright = width;
+		if (floatright <= 960) {
+			$(this).css("margin-left", floatright - 60 + "px");
+		} else {
+			$(this).css("margin-left", "960px");
+		}
+	});
+	var w = 0;
+	var h = $(".catalog").height();
+	$(".catalog_li a").each(function () {
+		var width = $(this).width();
+		if (width > w) {
+			w = width;
+		}
+	});
+	$(".catalog").width(w + 40 + "px");
+	//$("ul.left_ul li:odd").css("background-color", "#d3e6f9");
+	$(".span_hide").toggle(function () {
+		$(".catalog_li").hide();
+		$(this).text("[Show]")
+	}, function () {
+		$(".catalog_li").show();
+		$(this).text("[Hide]");
+	});
+	$(".catalog").height();
+	var height = $(".content").height();
+	if (710 - height < 60 && 710 - height >0) {             
+		$(".footer").css("margin-top", 710 - height + "px");
+	} else if (710 - height >60) {
+ 		$(".footer").css("margin-top", 710 - height - 60 + "px");
+	}
+	$(".confirm").click(function () {
+		var text = $(this).prev().val();
+		var text = $(this).prev().val();
+		if (text.length == "0") {
+			alert("Please enter sample key word! ")
+			return;
+		}
+		$(this).parents("div.lane").find("ul.imglist li").each(function () {
+			if ($(this).text().toLowerCase().indexOf(text.toLowerCase()) >= 0) {
+				$(this).show();
+			} else {
+				$(this).hide();
+			}
+		})
+	});
+	$(".showall").click(function () {
+		$(this).parents("div.lane").find("ul.imglist li").each(function () {
+			$(this).show();
+		})
+	});
+	$(".download1").find("img").mouseenter(function () {
+		$(this).parent().next().show();
+	});
+	$(".download1").mouseleave(function () {
+		$(".showMessage").hide();
+	});
+})
+</script>
+</head>
+
+<body>
+<div id="page">
+<div class = "content">
+<h1 style="color:#0072bc"><div style="width:22px;height:22px; border-radius: 11px;background-color: #0072bc;float:left;margin-top:8px;"></div> &nbsp;Results</h1>
+
+	<div><a name = '1'></a></div>
+	<h2>1 Data Statistics</h2>
+	<div class = "p">Raw reads produced from sequencing machines contain dirty reads which contain adapters, unknown or low quality bases. The output statistics of raw data is showen below: </div>
+	<div><a name = "table"></a></div>
+	<br/>
+	<div class = "align_center table-container">
+	<table>
+	<tr><th class = "align_center"><span class = "key_sign_tb">Sample<div class = "key_body"><div class = "key_content">Sample name</div></div></span></th><th class = "align_center"><span class = "key_sign_tb">Length<div class = "key_body"><div class = "key_content">The Length of raw reads</div></div></span></th><th class = "align_center"><span class = "key_sign_tb">Q20(%)<div class = "key_body"><div class = "key_content">The fraction of sequencing bases with quality score >= 20 in clean read</div></div></span></th><th class = "align_center"><span class = "key_sign_tb">Q30(%)<div class = "key_body"><div class = "key_content">The fraction of sequencing bases with quality score >= 30 in clean read</div></div></span></th><th class = "align_right"><span class = "key_sign_tb">Total Reads<div class = "key_body"><div class = "key_content">The number of raw reads</div></div></span></th><th class = "align_right"><span class = "key_sign_tb">Total Bases<div class = "key_body"><div class = "key_content">The number of raw bases</div></div></span></th></tr>
+	<tr><td class = "align_center">CT26-5-1</td><td class = "align_center">28;91</td><td class = "align_center">96.54;95.99</td><td class = "align_center">86.18;87.68</td><td class = "align_right">333,785,919</td><td class = "align_right">39,720,524,361</td></tr>
+	<tr><td class = "align_center">CT26-5-2</td><td class = "align_center">28;91</td><td class = "align_center">96.70;96.37</td><td class = "align_center">86.69;88.47</td><td class = "align_right">355,907,162</td><td class = "align_right">42,352,952,278</td></tr>
+	<tr><td class = "align_center">CT26-5-3</td><td class = "align_center">28;91</td><td class = "align_center">96.37;95.31</td><td class = "align_center">85.81;86.27</td><td class = "align_right">318,794,649</td><td class = "align_right">37,936,563,231</td></tr>
+	<tr><td class = "align_center">CT26-5-4</td><td class = "align_center">28;91</td><td class = "align_center">95.89;94.67</td><td class = "align_center">86.31;84.75</td><td class = "align_right">329,720,413</td><td class = "align_right">39,236,729,147</td></tr>
+	<tr><td class = "align_center">CT26-5-6</td><td class = "align_center">28;91</td><td class = "align_center">96.04;94.73</td><td class = "align_center">86.58;84.85</td><td class = "align_right">340,302,783</td><td class = "align_right">40,496,031,177</td></tr>
+	</table>
+	</div>
+	<br/>
+	<div class = "p", style="font-size:18px">Table Format:</div>
+	<div class = "p", style="font-size:18px">1. Sample_name: The name of sample </div>
+	<div class = "p", style="font-size:18px">2. Length: The Length of raw reads </div>
+	<div class = "p", style="font-size:18px">3. Q20 (%): The proportion of nucleotides with quality value larger than 20 </div>
+	<div class = "p", style="font-size:18px">4. Q30 (%): The proportion of nucleotides with quality value larger than 30 </div>
+	<div class = "p", style="font-size:18px">5. Total Reads: The total number of raw reads </div>
+	<div class = "p", style="font-size:18px">6. Total Bases: The total nucleotides number of raw reads </div>
+
+	<div><a name = '2'></a></div>
+	<h2>2 Contact</h2>
+	<div class = "p">Add: Beishan Industrial Zone, Yantian District, Shenzhen 518083, China </div><br/>
+	<div class = "p">Tel:  +86-755-25273620; 400-706-6615 </div><br/>
+	<div class = "p">Service Hotline: 400-706-6615 </div><br/>
+	<div class = "p">Customer Service: customer@genomics.com.cn </div><br/>
+	<div class = "p">Technical Support: tech@genomics.com.cn </div><br/>
+	<div class = "p">Complaint Hotline: 010-80481175(Beijing) 0755-25273291(Shenzhen) </div><br/>
+	<br/><br/>
+</div>
+</div>
+<div class="footer" style="font-size:14x;border-top:2px solid #c9c9c9; width:1265px;clear:both;"></div></div>

@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Overview of Services</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-body vscode-light">
+        <h1 id="overview-of-services">Overview of Services</h1>
+<p>Provider shall provide services listed in the table below to Customer.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Product Name</th>
+<th style="text-align:left">10X Genomics single cell RNA seq</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">Sample Type</td>
+<td style="text-align:left">Frozen cells</td>
+</tr>
+<tr>
+<td style="text-align:left">Sample Number</td>
+<td style="text-align:left">6</td>
+</tr>
+<tr>
+<td style="text-align:left">Species Name</td>
+<td style="text-align:left">Mouse</td>
+</tr>
+<tr>
+<td style="text-align:left">Sample origin</td>
+<td style="text-align:left">USA</td>
+</tr>
+<tr>
+<td style="text-align:left">Sequencing Platform</td>
+<td style="text-align:left">DNBseq</td>
+</tr>
+<tr>
+<td style="text-align:left">Read Length</td>
+<td style="text-align:left">100PE</td>
+</tr>
+<tr>
+<td style="text-align:left">Data output</td>
+<td style="text-align:left">50,000 raw reads per single cell; 5,000-6,000 single cell is expected to be generated for each sample</td>
+</tr>
+<tr>
+<td style="text-align:left">Bioinformatics</td>
+<td style="text-align:left">No bioinformatic analysis</td>
+</tr>
+<tr>
+<td style="text-align:left">Turnaround Time</td>
+<td style="text-align:left">35-40 business days</td>
+</tr>
+<tr>
+<td style="text-align:left">Additional Comments</td>
+<td style="text-align:left">We recommend 50,000 raw reads per single cell. If we isolate 5,000 single cell for each sample, 50K * 5,000=250 M reads/sample</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="fresh-sample-viability-prior-to-frozen">Fresh Sample viability Prior to Frozen</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">sample name</th>
+<th style="text-align:left">viable cell (million/ml)</th>
+<th style="text-align:left">viability</th>
+<th style="text-align:left">vol (ml)</th>
+<th style="text-align:left">Frozen media</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">CT26-5-1</td>
+<td style="text-align:left">1.9</td>
+<td style="text-align:left">82.50%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+<tr>
+<td style="text-align:left">CT26-5-2</td>
+<td style="text-align:left">1.9</td>
+<td style="text-align:left">82.50%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+<tr>
+<td style="text-align:left">CT26-5-3</td>
+<td style="text-align:left">1.9</td>
+<td style="text-align:left">82.50%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+<tr>
+<td style="text-align:left">CT26-5-4</td>
+<td style="text-align:left">4</td>
+<td style="text-align:left">83.80%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+<tr>
+<td style="text-align:left">CT26-5-5</td>
+<td style="text-align:left">4</td>
+<td style="text-align:left">83.80%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+<tr>
+<td style="text-align:left">CT26-5-6</td>
+<td style="text-align:left">4</td>
+<td style="text-align:left">83.80%</td>
+<td style="text-align:left">1</td>
+<td style="text-align:left">CS10</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sample-id-table--qc-results-from-bgi-cdna">Sample ID Table &amp; QC Results from BGI (cDNA)</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Sample #</th>
+<th style="text-align:left">BGI Sample ID</th>
+<th style="text-align:left">Customer</th>
+<th style="text-align:left">Sample Type</th>
+<th style="text-align:left">Sample Volume (ul)</th>
+<th style="text-align:left">BGI Concentration (ng/ul)</th>
+<th style="text-align:left">BGI Total Quantity (ng)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left">Sample ID</td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">19159-19-01</td>
+<td style="text-align:left">CT26-5-1</td>
+<td style="text-align:left">cDNA</td>
+<td style="text-align:left">40</td>
+<td style="text-align:left">12.10</td>
+<td style="text-align:left">484.0</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">19159-19-02</td>
+<td style="text-align:left">CT26-5-2</td>
+<td style="text-align:left">cDNA</td>
+<td style="text-align:left">40</td>
+<td style="text-align:left">15.60</td>
+<td style="text-align:left">624.0</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">19159-19-03</td>
+<td style="text-align:left">CT26-5-3</td>
+<td style="text-align:left">cDNA</td>
+<td style="text-align:left">40</td>
+<td style="text-align:left">15.80</td>
+<td style="text-align:left">632.0</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">19159-19-04</td>
+<td style="text-align:left">CT26-5-4</td>
+<td style="text-align:left">cDNA</td>
+<td style="text-align:left">40</td>
+<td style="text-align:left">6.68</td>
+<td style="text-align:left">267.2</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">19159-19-05</td>
+<td style="text-align:left">CT26-5-5</td>
+<td style="text-align:left">N/A</td>
+<td style="text-align:left">N/A</td>
+<td style="text-align:left">N/A</td>
+<td style="text-align:left">N/A</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">19159-19-06</td>
+<td style="text-align:left">CT26-5-6</td>
+<td style="text-align:left">cDNA</td>
+<td style="text-align:left">40</td>
+<td style="text-align:left">5.14</td>
+<td style="text-align:left">205.6</td>
+</tr>
+<tr>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+<td style="text-align:left"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="sample-id-table--qc-results-post-dead-cell-removal">Sample ID Table &amp; QC Results (Post dead cell removal)</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Sample #</th>
+<th style="text-align:left">BGI-ID</th>
+<th style="text-align:left">Customer Sample ID</th>
+<th style="text-align:left">Sample Type</th>
+<th style="text-align:left">Sample Volume (ul)</th>
+<th style="text-align:left">Total Cell Count  (per ul)</th>
+<th style="text-align:left">Cell Viability</th>
+<th style="text-align:left">Number of cells loaded</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left">19159-19-01</td>
+<td style="text-align:left">CT26-5-1</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">478</td>
+<td style="text-align:left">0.780</td>
+<td style="text-align:left">12000</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left">19159-19-02</td>
+<td style="text-align:left">CT26-5-2</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">454</td>
+<td style="text-align:left">0.784</td>
+<td style="text-align:left">12000</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left">19159-19-03</td>
+<td style="text-align:left">CT26-5-3</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">490</td>
+<td style="text-align:left">0.707</td>
+<td style="text-align:left">12000</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left">19159-19-04</td>
+<td style="text-align:left">CT26-5-4</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">174</td>
+<td style="text-align:left">0.738</td>
+<td style="text-align:left">7517</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left">19159-19-05</td>
+<td style="text-align:left">CT26-5-5</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">173</td>
+<td style="text-align:left">0.550</td>
+<td style="text-align:left">N/A</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left">19159-19-06</td>
+<td style="text-align:left">CT26-5-6</td>
+<td style="text-align:left">cell</td>
+<td style="text-align:left">150</td>
+<td style="text-align:left">233</td>
+<td style="text-align:left">0.760</td>
+<td style="text-align:left">10066</td>
+</tr>
+</tbody>
+</table>
+<pre><code><code><div>From: Yaya Wang &lt;yaya_wang@h3biomedicine.com&gt;				
+Sent: Monday, May 3, 2021 12:44 PM				
+To: Zonghui Peng &lt;zonghui.peng@bgi.com&gt;				
+Cc: Yonghong Xiao &lt;yonghong_xiao@h3biomedicine.com&gt;; Kuan-Chun Huang &lt;kuan-chun_huang@h3biomedicine.com&gt;; Yaoyu Wang &lt;yaoyu_wang@h3biomedicine.com&gt;				
+Subject: Re: timing for scRNA-seq study samples				
+				
+外部邮件/External Mail				
+				
+Hi Zonghui,				
+Below is the sample information. Should the cell viability not pass QC after thawing, please do a dead cell removal before loading to the 10x.				
+Thank you.				
+sample name	viable cell (million/ml)	viability	vol (ml)	Frozen media
+CT26-5-1	1.9	82.50%	1	CS10
+CT26-5-2	1.9	82.50%	1	CS10
+CT26-5-3	1.9	82.50%	1	CS10
+CT26-5-4	4	83.80%	1	CS10
+CT26-5-5	4	83.80%	1	CS10
+CT26-5-6	4	83.80%	1	CS10
+
+Yaya			
+</div></code></code></pre>
+<pre><code><code><div>何韵秋(Yunqiu He) &lt;heyunqiu1@bgi.com&gt;
+Jun 4, 2021, 6:05 AM
+to Kuan-Chun, Yaya, Yonghong, me, 涂碧梦(Bimeng, Zonghui, 刘嘉颖(Jiaying
+
+Dear Kuan，
+
+ Hope you are well today. Data is ready now. In total, we have completed scRNA-seq study for your 5 samples for F21FTSUSAT0272-LIBuepR and $21,544 will be charged. Here is the path.
+
+
+Path: s3://h3bioinf-share-bgi/F21FTSUSAT0272_LIBuepR_4Jun2021
+
+Thanks for choosing BGI and we look forward to working with you again.
+Please feel free to let me know if any questions you have.
+Best，
+
+Yunqiu
+----
+Nathan Johnson
+Jun 4, 2021, 2:10 PM
+to 刘嘉颖(Jiaying, Yonghong, 何韵秋(Yunqiu, Kuan-Chun, Yaya, me, 涂碧梦(Bimeng, Zonghui
+
+Thank you Yungqiu! I can confirm we have it. 
+</div></code></code></pre>
+
+    </body>
+    </html>
