@@ -1,4 +1,4 @@
-# Mediar-scRNAseq-Analysis
+# [company name]-scRNAseq-Analysis
 ### Finalized 2023.09.01 by Nathan Johnson
 
 ### Analyze scRNA-Seq data for [company name] with the following experiment key. 
