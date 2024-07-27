@@ -13,6 +13,9 @@ Cancer cells commonly develop resistance to immunotherapy by loss of antigen exp
 
 ### 2. CyCif_Manager-master-project
 
+The CyCIF Manager project aims to provide a streamlined pipeline platform for CyCIF (Cyclic Immunofluorescence) analysis, both on local machines and on the O2 cluster at Harvard Medical School (HMS). This project includes infrastructure for managing and analyzing high-dimensional imaging data, essential for research in fields like immunology and oncology. The platform ensures consistent and efficient processing of CyCIF data, facilitating the integration of different datasets and enhancing reproducibility in analysis.
+
+Key features of the CyCIF Manager include scripts and tools for setting up the necessary environments, managing pipeline versions, and processing example datasets. The repository also includes detailed documentation and installation guides to help users deploy and utilize the pipeline effectively.
 
 
 ### 3. DrugResponse-master-project
