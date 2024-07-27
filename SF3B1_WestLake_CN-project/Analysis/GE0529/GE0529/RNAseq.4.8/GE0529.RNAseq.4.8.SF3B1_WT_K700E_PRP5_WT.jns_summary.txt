@@ -1,0 +1,2 @@
+ID	gene_symbols	refseq_gene	chr	start	end	strand	ave_wt_perc	ave_mut_perc	log_ratio	perc_qval	ave_wt_raw	ave_mut_raw	novel	alt_3ss_sig	alt_5ss_sig	exon_inclusion_sig	exon_skipping_sig	intron_retention_sig	intron_skipping_sig	wt_perc_qc	mut_perc_qc	3ss_mad_score	5ss_mad_score	events	canonical_jns	u12_intron	nmd_prediction
+chr17:4851756-4852238:-:end	PFN1		chr17	4851756	4852238	-	0	80	12.014794	0.03345395	0	197	True	True	False	False	False	False	False	0.0	87.188614	-1.8118595	-0.036754817	alt_3ss	chr17:4851850-4852238:-|alt_3ss	NA	No CDS

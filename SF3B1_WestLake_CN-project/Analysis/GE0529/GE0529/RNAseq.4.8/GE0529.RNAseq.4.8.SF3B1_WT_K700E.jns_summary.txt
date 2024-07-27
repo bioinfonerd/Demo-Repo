@@ -1,0 +1,1 @@
+ID	gene_symbols	refseq_gene	chr	start	end	strand	ave_wt_perc	ave_mut_perc	log_ratio	perc_qval	ave_wt_raw	ave_mut_raw	novel	alt_3ss_sig	alt_5ss_sig	exon_inclusion_sig	exon_skipping_sig	intron_retention_sig	intron_skipping_sig	wt_perc_qc	mut_perc_qc	3ss_mad_score	5ss_mad_score	events	canonical_jns	u12_intron	nmd_prediction

@@ -1,0 +1,51 @@
+Id,Description,Creation Person,Creation Date,Last Edit Person,Last Edit Date,Experiment,Name,Replicate,Sample Type,Perturbation,Cell Line,Cell Line Sample,Mutation,Mutation Description,Engineered,Patient Sample,Tumor Type,Tumor Subtype,Tumor Subtype Description,Species,Status,Last Status Change Date,File Reference Count,NGS Mate Type,Sample Preparation
+GS051438,,hbi18538,56:35.0,,,GE0527,1,3,cell line,P001591,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051439,,hbi18538,04:51.0,hbi18538,05:27.0,GE0527,2,3,cell line,,HEK293.2,,,,,,,,,,,,0,,
+GS051440,empty vector control,hbi18538,13:28.0,,,GE0527,1,3,cell line,P001591,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051441,WT SF3B1,hbi18538,13:35.0,,,GE0527,2,3,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051442,SF3B1(K700E),hbi18538,13:36.0,,,GE0527,3,4,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051443,SF3B1(K700E) and WT PRP5,hbi18538,13:38.0,,,GE0527,4,5,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051444,SF3B1(KR625C),hbi18538,13:39.0,,,GE0527,5,6,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051445,SF3B1(R625C) and WT PRP5,hbi18538,13:41.0,,,GE0527,6,7,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051446,SF3B1(H662D),hbi18538,13:42.0,,,GE0527,7,8,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051447,SF3B1(H662D) and WT PRP5,hbi18538,13:44.0,,,GE0527,8,9,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051448,WT PRP5,hbi18538,13:45.0,,,GE0527,9,10,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051449,PRP5(W198A),hbi18538,13:46.0,,,GE0527,10,11,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051450,PRP5(D203K),hbi18538,13:48.0,,,GE0527,11,12,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051451,PRP5(DPLD to AAAA),hbi18538,13:49.0,,,GE0527,12,13,cell line,,HEK293.2,,,,,,,,,human,,,0,paired end,PolyA
+GS051452,empty vector control,hbi18538,40:10.0,hbi18538,32:56.6,GE0527,1,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051453,empty vector control,hbi18538,40:18.0,hbi18538,32:59.2,GE0527,1,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051454,empty vector control,hbi18538,40:19.0,hbi18538,33:01.9,GE0527,1,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051455,WT SF3B1,hbi18538,40:21.0,hbi18538,33:04.4,GE0527,2,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051456,WT SF3B1,hbi18538,40:22.0,hbi18538,33:06.9,GE0527,2,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051457,WT SF3B1,hbi18538,40:23.0,hbi18538,33:09.5,GE0527,2,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051458,SF3B1(K700E),hbi18538,40:25.0,hbi18538,33:12.2,GE0527,3,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051459,SF3B1(K700E),hbi18538,40:26.0,hbi18538,33:14.5,GE0527,3,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051460,SF3B1(K700E),hbi18538,40:28.0,hbi18538,33:17.1,GE0527,3,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051461,SF3B1(K700E) and WT PRP5,hbi18538,40:29.0,hbi18538,33:19.5,GE0527,4,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051462,SF3B1(K700E) and WT PRP5,hbi18538,40:30.0,hbi18538,33:22.2,GE0527,4,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051463,SF3B1(K700E) and WT PRP5,hbi18538,40:32.0,hbi18538,33:24.8,GE0527,4,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051464,SF3B1(KR625C),hbi18538,40:33.0,hbi18538,33:32.5,GE0527,5,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051465,SF3B1(KR625C),hbi18538,40:35.0,hbi18538,33:35.1,GE0527,5,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051466,SF3B1(KR625C),hbi18538,40:36.0,hbi18538,33:37.7,GE0527,5,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051467,SF3B1(R625C) and WT PRP5,hbi18538,40:37.0,hbi18538,33:40.2,GE0527,6,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051468,SF3B1(R625C) and WT PRP5,hbi18538,40:39.0,hbi18538,33:42.7,GE0527,6,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051469,SF3B1(R625C) and WT PRP5,hbi18538,40:40.0,hbi18538,33:45.1,GE0527,6,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051470,SF3B1(H662D),hbi18538,40:42.0,hbi18538,33:48.5,GE0527,7,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051471,SF3B1(H662D),hbi18538,40:43.0,hbi18538,33:50.9,GE0527,7,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051472,SF3B1(H662D),hbi18538,40:44.0,hbi18538,33:53.4,GE0527,7,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051473,SF3B1(H662D) and WT PRP5,hbi18538,40:46.0,hbi18538,33:55.8,GE0527,8,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051474,SF3B1(H662D) and WT PRP5,hbi18538,40:47.0,hbi18538,33:58.4,GE0527,8,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051475,SF3B1(H662D) and WT PRP5,hbi18538,40:54.0,hbi18538,34:01.1,GE0527,8,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051476,WT PRP5,hbi18538,40:55.0,hbi18538,34:08.8,GE0527,9,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051477,WT PRP5,hbi18538,40:57.0,hbi18538,34:11.6,GE0527,9,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051478,WT PRP5,hbi18538,40:59.0,hbi18538,34:14.3,GE0527,9,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051479,PRP5(W198A),hbi18538,41:00.0,hbi18538,34:16.9,GE0527,10,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051480,PRP5(W198A),hbi18538,41:01.0,hbi18538,34:19.7,GE0527,10,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051481,PRP5(W198A),hbi18538,41:03.0,hbi18538,34:22.3,GE0527,10,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051482,PRP5(D203K),hbi18538,41:04.0,hbi18538,34:24.8,GE0527,11,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051483,PRP5(D203K),hbi18538,41:06.0,hbi18538,34:27.6,GE0527,11,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051484,PRP5(D203K),hbi18538,41:07.0,hbi18538,34:30.1,GE0527,11,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051485,PRP5(DPLD to AAAA),hbi18538,41:08.0,hbi18538,34:32.5,GE0527,12,1,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051486,PRP5(DPLD to AAAA),hbi18538,41:10.0,hbi18538,34:35.2,GE0527,12,2,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA
+GS051487,PRP5(DPLD to AAAA),hbi18538,41:11.0,hbi18538,34:43.0,GE0527,12,3,cell line,,HEK293.2,,,,,,,,,human,,,2,paired end,PolyA

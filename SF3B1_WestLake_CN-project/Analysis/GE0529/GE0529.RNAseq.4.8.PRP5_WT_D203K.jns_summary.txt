@@ -1,0 +1,8 @@
+ID	gene_symbols	refseq_gene	chr	start	end	strand	ave_wt_perc	ave_mut_perc	wt_perc_qc	mut_perc_qc	log_ratio	perc_qval	alt_3ss	alt_5ss	exon_inclusion	exon_skipping	intron_retention	ave_wt_raw	ave_mut_raw	edger_gene_qval	3ss_mad_score	5ss_mad_score
+chr14:103988652-103988734:-:end			chr14	103988652	103988734	-	0	1	0.0	3.0120482	3.3408256	0.14941348	False	False	False	False	False	0	148	NA	-1.7304212	2.8340433
+chr15:66793443-66793742:-:start	RPL4	RPL4	chr15	66793443	66793742	-	0	0	0.41214946	0.0	-1.9043169	0.14941348	False	False	False	False	False	45	0	NA	0.26957622	-2.4278178
+chr17:16285689-16285725:+:end	UBB		chr17	16285689	16285725	+	0	0	0.0	0.73216414	2.7225695	0.04882121	False	False	False	False	False	0	114	NA	-0.26957622	-0.09590283
+chr17:8283206-8285460:-:end	RP11-849F2.7,RPL26	RPL26	chr17	8283206	8285460	-	0	0	0.0	0.5990398	2.5732555	0.04882121	False	False	False	False	False	0	149	NA	-0.26957875	-0.64223766
+chr5:134102750-134106598:+:start	DDX46	DDX46	chr5	134102750	134106598	+	0	0	0.66827446	0.0	-2.5605917	0.04882121	False	False	False	False	False	289	0	NA	3.1912637	1.3577623
+chrX:71493239-71493717:-:end	RPS4X	RPS4X	chrX	71493239	71493717	-	0	0	0.0	0.80832875	2.9055223	0.04882121	False	False	False	False	False	0	186	NA	4.1129537	0.09590283
+chrX:71493239-71493717:-:start	RPS4X	RPS4X	chrX	71493239	71493717	-	0	1	0.0	1.7250723	4.0328465	0.04882121	False	False	False	False	False	0	186	NA	4.1129537	0.09590283

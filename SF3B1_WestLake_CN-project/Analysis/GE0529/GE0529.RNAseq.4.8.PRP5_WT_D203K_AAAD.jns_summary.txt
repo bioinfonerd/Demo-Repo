@@ -1,0 +1,3 @@
+ID	gene_symbols	refseq_gene	chr	start	end	strand	ave_wt_perc	ave_mut_perc	wt_perc_qc	mut_perc_qc	log_ratio	perc_qval	alt_3ss	alt_5ss	exon_inclusion	exon_skipping	intron_retention	ave_wt_raw	ave_mut_raw	edger_gene_qval	3ss_mad_score	5ss_mad_score
+chr1:93299015-93299103:+:start	SNORD21,SNORA66,RPL5	RPL5	chr1	93299015	93299103	+	0	0	0.8852236	0.0	-3.0012984	0.11445775	False	False	False	False	False	115	0	NA	nan	nan
+chr5:134102750-134106598:+:start	DDX46	DDX46	chr5	134102750	134106598	+	0	0	0.66827446	0.0	-2.5605917	0.059047487	False	False	False	False	False	289	0	NA	nan	nan

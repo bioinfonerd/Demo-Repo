@@ -1,0 +1,231 @@
+## ----------------------------------------
+## YML template to run RNA-seq automation.
+## After modifying arguments below, execute with: "sb automations start rnaseq.yml"
+## Tested with code package version 2.0.9
+## ---------------------------------------
+
+## Name of automation to execute.
+## Allowed values: RNA-seq-TEST, RNA-seq
+automation-name: RNA-seq
+
+## ID of code package to execute.
+## Default: Execute latest code package of specified automation.
+## Example: 2497f045-2f00-47a1-9956-15d672a7355b
+# package-id: 
+
+## Name of the automation run. 
+## Default: <GE-numbers>_<wf-ver>_<code-package-version>_<timestamp>
+## Example: GE9996_RNAseq.4.8_2.0.9_05-28-21_18:43:56
+name: GE0527_diffSplice.v2
+
+inputs:
+
+  ## Workflow version
+  ## Allowed values: RNAseq.4.6, RNAseq.4.7, RNAseq.4.8, RNAseq.5.0, RNAseq.5.1
+  wf_ver: RNAseq.5.1
+
+  ## Reference files read length. 
+  ## Read length pe150 is only available for RNAseq.5.x. versions or 
+  ## when gtf_volume and gtf_filepath are both provided.
+  ## Allowed values: pe50, pe100, pe150
+  read_length: pe150
+
+  ## Genomic experiment number(s).
+  ## ge_numbers is required input if merged_counts_and_boundaries, 
+  ## merged_counts_and_boundaries_volume, boundaries_flag and 
+  ## class_file_id are not provided
+  ## Example: GE9996
+  GE_numbers: GE0527
+
+  ## When exporting, overwrite files with the same name on the bucket.
+  ## Allowed values: True, False
+  overwrite_export_files: True
+  
+  ## Don't produce bam files in STAR.
+  ## Default: False
+  #  no_bam: False
+  
+  ## STAR mode. 
+  ## Allowed values: S1, S2, B2
+  ## Default: S2
+  # star_mode: S2
+  
+  ## Toggle running boundaries. 
+  ## Allowed values: True, False
+  ## Default: False
+  boundaries_flag: True
+  
+  ## QC type
+  ## Allowed values: simpleqc, fullqc, noqc
+  ## Default: simpleqc
+  # qc: simpleqc
+  
+  ## Toggle running merge. 
+  ## Allowed values: True, False
+  ## Default: True
+  # merge: True
+  
+  ## Toggle private run. If True no other teams or users will be added to 
+  ## the project. 
+  ## Allowed values: True, False
+  ## Default: False
+  # private_run: False
+  
+  ## Default: 0
+  # junction_min_coverage: 0
+  
+  ## Default: 200
+  # single_end_fragment_len: 200
+  
+  ## Toggle running xenotools. 
+  ## Allowed values: True, False
+  ## Default: False
+  # xenotools: False
+  
+  ## List of samples in a GE number to ignore.
+  # exclude_samples:
+  # - sample_id_1
+  # - sample_id_2
+  
+  ## Default: 1
+  # junction_count_cutoff: 1
+  
+  ## Toggles if hg19_exons or mm10_exons reference is going to be used.
+  ## Required input if merged_counts_and_boundaries and merged_counts_and_boundaries_volume
+  ## inputs are used and ge_numbers input is not used.
+  ## Allowed values: human, mouse
+  # species:
+  
+  ## Custom name of the Differential Splicing analysis project. 
+  ## Required input if multiple GE numbers or merged_counts_and_boundaries 
+  ## and merged_counts_and_boundaries_volume are used together with 
+  ## boundaries_flag and class_file_id
+  diff_splice_project: GE0527_DiffSplice
+  
+  ## A list of paths on a volume provided on merged_counts_and_boundaries_volume
+  ## input to the files produced by Merge Boundaries workflow.
+  # merged_counts_and_boundaries:
+  
+  ## ID of the volume containing files produced by Merge Boundaries workflow. 
+  ## Example: h3bio/h3bioinf_data/
+  # merged_counts_and_boundaries_volume:
+  
+  ## Parameters that will be added to/change the existing STAR CMD line parameters. 
+  ## Example: --alignWindowsPerReadNmax 10008 --alignIntronMin 22
+  # additional_star_parameters:
+  
+  ## Parameters that will be added to/change the existing Kallisto CMD line parameters.
+  ## Example: --bootstrap-samples 90 --seed 40
+  # additional_kallisto_parameters:
+  
+  ## ID of the volume containing custom GTF files.
+  ## Example: h3bio/h3bioinf_pipelines_resources/  
+  # gtf_volume:
+  
+  ## Path to the location on the gtf_volume where GTF file is stored.
+  ## Example: GRCh37/Gencode/25/gencode.v25lift37.annotation.gtf.gz
+  # gtf_filepath:
+  
+  ## SB file ID of class JSON file for diff splicing.
+  ## Use "sb upload" command first to upload this file to the platform
+  ## and to obtain file ID.
+  class_file_id: 610ac79611094c6558b30b3f
+  
+  ## Collaboration marker
+  # collaboration:
+
+settings:
+
+  ## Optional custom name of the analysis project. Default value is inferred 
+  ## from the genomic experiment number and the workflow version.
+  ## Custom project name is not allowed if multiple GE numbers or 
+  ## merged_counts_and_boundaries_volume and merged_counts_and_boundaries 
+  ## are provided
+  ## Example: Test_GE9996_RNAseq.4.8
+  # project_name:
+  
+  ## Optional custom export root path. Default value is volume root. 
+  ## If project_name parameter is set, default value is the custom project name.
+  # export_root:
+  
+  ## Optional custom export folder path. If project_name parameter is set,
+  ## default value is the custom project name. 
+  ## Default: None
+  ## Example: GE#/PIPELINE_YX/custom_export_folder/pipeline results
+  # custom_export_folder:
+    
+  ## ID of the volume to which results are going to be exported. 
+  ## Default: h3bio/h3bioinf_data/
+  # export_volume:
+  
+  ## ID of the volume to which scratch results are going to be exported. 
+  ## Default: h3bio/h3bioinf_scratch/
+  # scratch_volume:
+  
+  ## ID of the volume containing manifest files. 
+  ## Default: h3bio/h3bioinf_ge_metadata/
+  # manifest_volume:
+  
+  ## ID of the volume for exporting IGV xml files.
+  ## Default: h3bio/h3bioinf_igv/
+  # igv_volume:
+  
+  ## ID of the volume containing reference files.
+  ## Default: h3bio/h3bioinf_pipelines_resources/
+  # reference_volume:
+  
+  ## Path to the location on the manifest_volume where manifest files are stored.
+  ## json_file_path:
+  ## IDs and permissions of users that will be added to the analysis project.
+  # users:
+  
+  ## IDs and permissions of teams that will be added to the analysis project. 
+  ## Default: see below
+  # teams:
+  #  e1f8618d-d617-4d2f-81a1-577e738f131f:
+  #    copy: true
+  #    write: true
+  #    execute: true
+  #    admin: false
+  #  8666976c-84da-4f49-8714-edb67cdd4be6:
+  #    copy: false
+  #    write: false
+  #    execute: false
+  #    admin: false
+  
+  ## Toggles if spot instances are going to be used for running tasks. 
+  ## Default: True
+  # spot_instances:
+  
+  ## IDs of apps used in the analysis, each with their own key.
+  ## Default: see below
+  # apps: 
+  #   bam_to_fastq_tool: h3bio/tool-porting-dev/bam2fastq_wf/4
+  #   cram_to_fastq_tool: h3bio/tool-porting-dev/cram_to_fastq_wf/5
+  #   merge_fq_app: h3bio/tool-porting-dev/merge_fq_files/3
+  #   sffpj_tool: h3bio/tool-porting-dev/sample_filter_first_pass_junction/1
+  #   mffpj_tool: h3bio/tool-porting-dev/merge_filter_first_pass_junction/2
+  #   star_wf: h3bio/tool-porting-dev/star_sentieon/22
+  #   junction_wf: h3bio/tool-porting-dev/junctions/2
+  #   kallisto_wf: h3bio/tool-porting-dev/kallisto_wf/19
+  #   xeno_kallisto_wf: h3bio/tool-porting-dev/star_xeno_kallisto_wf/32
+  #   merge_xeno_tool: h3bio/tool-porting-dev/merge_xeno/2
+  #   boundaries_wf: h3bio/tool-porting-dev/boundaries_wf/4
+  #   add_qc_wf: h3bio/tool-porting-dev/additional_qc/7
+  #   read_dist: h3bio/tool-porting-dev/read_distribution/2
+  #   multiqc: h3bio/tool-porting-dev/multiqc_task/4
+  #   merge_kallisto_columns_tool: h3bio/tool-porting-dev/kallisto_merge/6
+  #   merge_psi_tool: h3bio/tool-porting-dev/merge_junctions_psi/3
+  #   merge_boundaries_wf: h3bio/tool-porting-dev/merge_boundaries_wf/2
+  #   merge_star_tool: h3bio/tool-porting-dev/merge_star/2
+  #   merge_annotations_tool: h3bio/tool-porting-dev/merge_annotations_and_counts/7
+  #   merge_qc_wf: h3bio/tool-porting-dev/merge_tin_qc/4
+  #   sra_app: h3bio/tool-porting-dev/sra-toolkit-fastq-dump-2-8-0/1
+  #   diff_splicing_app: h3bio/tool-porting-dev/differential-splicing/0
+  #   diff_splicing_merge: h3bio/differential-splicing-dev/differential-splicing-input-merge/5
+
+  ## Defines the interval in which the tasks are checked for completion status, 
+  ## in seconds. 
+  ## Default: 60
+  # refresh_rate: 60
+
